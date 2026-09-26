@@ -1,6 +1,6 @@
 import os
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
@@ -80,9 +80,12 @@ app.jinja_env.globals.update(
 
 @app.route("/")
 def index():
-    search   = request.args.get("q", "")
-    category = request.args.get("category", "")
-    date_f   = request.args.get("date", "")
+    search   = request.args.get("q", "").strip()
+    category = request.args.get("category", "").strip()
+    date_f   = request.args.get("date", "").strip()
+
+    # Все категории для селекта
+    categories = supabase.table("categories").select("*").execute().data or []
 
     query = (
         supabase.table("events")
@@ -90,31 +93,56 @@ def index():
         .eq("status", "published")
         .order("event_date", desc=False)
     )
+
+    # Поиск по названию
     if search:
         query = query.ilike("title", f"%{search}%")
+
+    # Фильтр по категории: сначала находим category_id по slug
     if category:
-        query = query.eq("categories.slug", category)
+        cat_result = (
+            supabase.table("categories")
+            .select("id")
+            .eq("slug", category)
+            .execute()
+        )
+        if cat_result.data:
+            cat_id = cat_result.data[0]["id"]
+            query = query.eq("category_id", cat_id)
+        else:
+            events = []
+            return render_template(
+                "index.html",
+                events=events,
+                categories=categories,
+                search=search,
+                category_filter=category,
+                date_filter=date_f,
+            )
+
+    # Фильтр по дате
+    now = datetime.utcnow()
+    if date_f == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end   = start + timedelta(days=1)
+        query = query.gte("event_date", start.isoformat()).lt("event_date", end.isoformat())
+    elif date_f == "week":
+        end = now + timedelta(days=7)
+        query = query.gte("event_date", now.isoformat()).lte("event_date", end.isoformat())
+    elif date_f == "month":
+        end = now + timedelta(days=30)
+        query = query.gte("event_date", now.isoformat()).lte("event_date", end.isoformat())
 
     events = query.execute().data or []
 
-    # Ближайшее событие для баннера (если есть пользователь — показываем в кабинете)
-    upcoming = (
-        supabase.table("events")
-        .select("*")
-        .eq("status", "published")
-        .gte("event_date", datetime.utcnow().isoformat())
-        .order("event_date", desc=False)
-        .limit(1)
-        .execute()
-        .data
+    return render_template(
+        "index.html",
+        events=events,
+        categories=categories,
+        search=search,
+        category_filter=category,
+        date_filter=date_f,
     )
-    next_event = upcoming[0] if upcoming else None
-
-    return render_template("index.html",
-                           events=events,
-                           next_event=next_event,
-                           search=search)
-
 
 @app.route("/event/<slug>")
 def event_detail(slug):

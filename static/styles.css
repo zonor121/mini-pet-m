@@ -285,15 +285,24 @@ button, input, select { font-family: 'Inter', sans-serif; }
 
 .filters__select-wrap {
     position: relative;
+    display: flex;
+    align-items: center;
     background-color: #FFFFFF;
     border: 1.5px solid #E5E7EB;
     border-radius: 12px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 170px;
 }
 
 .filters__select-wrap:focus-within {
     border-color: #6366F1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.filters__select-icon {
+    position: absolute;
+    left: 14px;
+    pointer-events: none;
 }
 
 .filters__select {
@@ -302,12 +311,18 @@ button, input, select { font-family: 'Inter', sans-serif; }
     background: transparent;
     border: none;
     outline: none;
-    padding: 11px 32px 11px 16px;
+    padding: 11px 36px 11px 42px;
     font-size: 14px;
     color: #374151;
     cursor: pointer;
+    width: 100%;
 }
 
+.filters__chevron {
+    position: absolute;
+    right: 12px;
+    pointer-events: none;
+}
 
 /* ============================================================
    CARDS GRID (index)

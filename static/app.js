@@ -32,3 +32,17 @@ document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.add('tab--active');
     });
 });
+
+// ── Поиск по Enter ───────────────────────────────────────────
+const filtersForm = document.getElementById('filters-form');
+if (filtersForm) {
+    const searchInput = filtersForm.querySelector('.filters__input');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filtersForm.submit();
+            }
+        });
+    }
+}
