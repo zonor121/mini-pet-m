@@ -328,9 +328,10 @@ def index():
 
 @app.route("/event/<slug>")
 def event_detail(slug):
+    # Запрашиваем VIEW вместо таблицы events
     result = (
-        supabase_anon.table("events")
-        .select("*, categories(name), users!organizer_id(full_name)")
+        supabase_anon.table("event_details_view")
+        .select("*")
         .eq("slug", slug)
         .single()
         .execute()
@@ -339,6 +340,7 @@ def event_detail(slug):
     if not event:
         flash("Мероприятие не найдено", "danger")
         return redirect(url_for("index"))
+        
     return render_template("detail.html", event=event)
 
 @app.route("/register_event/<int:event_id>", methods=["POST"])

@@ -10,12 +10,14 @@
 </a>
 
 <div class="layout">
-    <!-- Left -->
+    <!-- Left Column: Event Info -->
     <div class="event-info">
         <div class="event-info__badges">
-            <span class="badge badge--seats">Свободно {{ event.available_seats }} из {{ event.total_seats }} мест</span>
+            <span class="badge badge--seats">
+                Свободно {{ event.available_seats }} из {{ event.total_seats }} мест
+            </span>
             <span class="badge badge--category">
-                {{ event.categories.name.upper() if event.categories else 'СОБЫТИЕ' }}
+                {{ event.category_name.upper() if event.category_name else 'СОБЫТИЕ' }}
             </span>
         </div>
 
@@ -35,7 +37,7 @@
             <div class="event-meta__item">
                 <span class="event-meta__label">ОРГАНИЗАТОР</span>
                 <span class="event-meta__value event-meta__value--link">
-                    {{ event.users.full_name if event.users else 'EventHUB' }}
+                    {{ event.organizer_name or 'EventHUB Team' }}
                 </span>
             </div>
         </div>
@@ -46,38 +48,52 @@
         </div>
     </div>
 
-    <!-- Right: Registration Form -->
+    <!-- Right Column: Registration Form -->
     <aside class="reg-form-wrap">
         <div class="reg-form">
             <h2 class="reg-form__title">Регистрация на событие</h2>
             <p class="reg-form__subtitle">Заполните форму для получения билета</p>
 
             {% if get_current_user() %}
-            <form action="{{ url_for('register', event_id=event.id) }}" method="POST" class="reg-form__form">
-                <input type="hidden" name="slug" value="{{ event.slug }}">
+                {% if event.available_seats > 0 %}
+                <form action="{{ url_for('register_event', event_id=event.id) }}" method="POST" class="reg-form__form">
+                    <input type="hidden" name="slug" value="{{ event.slug }}">
+                    
+                    <div class="form-group">
+                        <label class="form-label">ФИО</label>
+                        <input type="text" class="form-input" value="{{ get_current_user().full_name }}" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" value="{{ get_current_user().email }}" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Комментарий</label>
+                        <input type="text" name="comment" class="form-input" placeholder="Напишите пожелание или вопрос...">
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">ФИО</label>
-                    <input type="text" class="form-input" value="{{ get_current_user().full_name }}" readonly>
+                    <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
+                </form>
+                {% else %}
+                <div class="reg-form__login-prompt">
+                    <div style="text-align: center; padding: 20px; background: #FEF2F2; border-radius: 10px; color: #DC2626; font-weight: 500;">
+                        Извините, все места на это мероприятие заняты.
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" value="{{ get_current_user().email }}" readonly>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Комментарий</label>
-                    <input type="text" name="comment" class="form-input" placeholder="Напишите пожелание или вопрос...">
-                </div>
-
-                <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
-            </form>
+                {% endif %}
             {% else %}
             <div class="reg-form__login-prompt">
                 <p>Войдите, чтобы зарегистрироваться на мероприятие</p>
                 <form action="{{ url_for('login') }}" method="POST" class="login-inline login-inline--col">
                     <input type="email" name="email" placeholder="Ваш email" required class="form-input">
+                    <input type="password" name="password" placeholder="Пароль" required class="form-input">
                     <button type="submit" class="btn btn--primary btn--full">Войти</button>
                 </form>
+                <div style="text-align: center; margin-top: 10px; font-size: 13px;">
+                    Нет аккаунта? <a href="{{ url_for('register') }}" style="color: #4F46E5; font-weight: 600;">Зарегистрироваться</a>
+                </div>
             </div>
             {% endif %}
         </div>
