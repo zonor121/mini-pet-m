@@ -33,16 +33,19 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
-// ── Поиск по Enter ───────────────────────────────────────────
+// ── Живой поиск (Debounce) ──────────────────────────────────
+const searchInput = document.querySelector('.filters__input');
 const filtersForm = document.getElementById('filters-form');
-if (filtersForm) {
-    const searchInput = filtersForm.querySelector('.filters__input');
-    if (searchInput) {
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                filtersForm.submit();
-            }
-        });
-    }
+
+if (searchInput && filtersForm) {
+    let timeout = null;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        // Ждем 500мс после окончания ввода, чтобы не спамить запросами
+        timeout = setTimeout(() => {
+            filtersForm.submit();
+        }, 500);
+    });
 }
+

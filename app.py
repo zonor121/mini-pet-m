@@ -293,8 +293,15 @@ def index():
         .order("event_date", desc=False)
     )
 
-    if search: query = query.ilike("title", f"%{search}%")
-    
+    # --- УЛУЧШЕННЫЙ ПОИСК ---
+    if search:
+        # Ищем по названию ИЛИ описанию ИЛИ локации (регистронезависимо)
+        # Supabase PostgREST поддерживает .or_ для множественных условий
+        query = query.or_(
+            f"title.ilike.%{search}%,description.ilike.%{search}%,location.ilike.%{search}%"
+        )
+    # ------------------------
+
     if category:
         cat_res = supabase_anon.table("categories").select("id").eq("slug", category).execute()
         if cat_res.data:
