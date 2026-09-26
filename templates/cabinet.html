@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет — EventHUB{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero__title">Личный кабинет</h1>
+    <p class="hero__subtitle">Ваши регистрации и ближайшие события</p>
+</section>
+
+{% if next_event %}
+<section class="countdown-banner" data-event-date="{{ next_event.event_date }}">
+    <div class="countdown-banner__info">
+        <span class="countdown-banner__label">БЛИЖАЙШЕЕ МЕРОПРИЯТИЕ</span>
+        <h2 class="countdown-banner__title">{{ next_event.title }}</h2>
+        <div class="countdown-banner__meta">
+            <div class="countdown-banner__meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="4" width="18" height="18" rx="3" stroke="rgba(255,255,255,.7)" stroke-width="2"/>
+                    <path d="M3 10h18" stroke="rgba(255,255,255,.7)" stroke-width="2"/>
+                </svg>
+                <span>{{ fmt_date(next_event.event_date) }}</span>
+            </div>
+            <div class="countdown-banner__meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="rgba(255,255,255,.7)" stroke-width="2"/>
+                    <circle cx="12" cy="9" r="2.5" stroke="rgba(255,255,255,.7)" stroke-width="2"/>
+                </svg>
+                <span>{{ next_event.location }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="countdown-banner__timer">
+        <div class="timer-block"><span class="timer-block__num" id="days">--</span><span class="timer-block__label">дней</span></div>
+        <div class="timer-block"><span class="timer-block__num" id="hours">--</span><span class="timer-block__label">часов</span></div>
+        <div class="timer-block"><span class="timer-block__num" id="minutes">--</span><span class="timer-block__label">минут</span></div>
+    </div>
+</section>
+{% endif %}
+
+<section class="registrations">
+    <h2 class="registrations__title">Мои регистрации</h2>
+    <div class="table-wrap">
+        <table class="reg-table">
+            <thead>
+                <tr>
+                    <th class="reg-table__th reg-table__th--event">МЕРОПРИЯТИЕ</th>
+                    <th class="reg-table__th reg-table__th--date">ДАТА СОБЫТИЯ</th>
+                    <th class="reg-table__th reg-table__th--status">СТАТУС</th>
+                    <th class="reg-table__th reg-table__th--action">ДЕЙСТВИЕ</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for reg in registrations %}
+            <tr class="reg-table__row">
+                <td class="reg-table__td reg-table__td--event">{{ reg.events.title }}</td>
+                <td class="reg-table__td reg-table__td--date">{{ fmt_short_date(reg.events.event_date) }}</td>
+                <td class="reg-table__td reg-table__td--status">
+                    {% set s = reg.status %}
+                    {% if s == 'confirmed' %}
+                        <span class="status status--confirmed">Подтверждена</span>
+                    {% elif s == 'created' %}
+                        <span class="status status--created">Создана</span>
+                    {% elif s in ('cancelled_by_user','cancelled_by_admin') %}
+                        <span class="status status--cancelled-visit">Посещение отменено</span>
+                    {% elif s == 'rejected' %}
+                        <span class="status status--cancelled">Отменена</span>
+                    {% else %}
+                        <span class="status status--created">{{ s }}</span>
+                    {% endif %}
+                </td>
+                <td class="reg-table__td reg-table__td--action">
+                    {% if s in ('confirmed','created') %}
+                    <form action="{{ url_for('cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline">
+                        <button type="submit" class="btn-cancel" onclick="return confirm('Отменить регистрацию?')">Отменить</button>
+                    </form>
+                    {% else %}
+                    <span class="action-dash">&mdash;</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="empty-row">У вас пока нет регистраций</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

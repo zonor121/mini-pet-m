@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Каталог мероприятий — EventHUB{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero__title">Каталог мероприятий</h1>
+    <p class="hero__subtitle">Регистрируйтесь на лучшие профессиональные и образовательные события</p>
+</section>
+
+<!-- Filters -->
+<form action="{{ url_for('index') }}" method="GET" class="filters">
+    <div class="filters__search">
+        <svg class="filters__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="#9CA3AF" stroke-width="2"/>
+            <path d="M20 20l-3.5-3.5" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="text" name="q" value="{{ search }}" class="filters__input"
+               placeholder="Поиск по названию или организатору...">
+    </div>
+    <div class="filters__select-wrap">
+        <select name="date" class="filters__select">
+            <option value="">Любая дата</option>
+            <option value="week">Эта неделя</option>
+            <option value="month">Этот месяц</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn--primary">Найти</button>
+</form>
+
+<!-- Cards -->
+<section class="cards">
+    {% for event in events %}
+    <article class="card">
+        <div class="card__header">
+            <span class="badge badge--category">
+                {{ event.categories.name.upper() if event.categories else 'СОБЫТИЕ' }}
+            </span>
+            <span class="badge badge--seats">Мест: {{ event.available_seats }} из {{ event.total_seats }}</span>
+        </div>
+        <h2 class="card__title">{{ event.title }}</h2>
+        <div class="card__meta">
+            <div class="card__meta-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="4" width="18" height="18" rx="3" stroke="#6B7280" stroke-width="2"/>
+                    <path d="M3 10h18" stroke="#6B7280" stroke-width="2"/>
+                    <path d="M8 2v4M16 2v4" stroke="#6B7280" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>{{ fmt_date(event.event_date) }}</span>
+            </div>
+            <div class="card__meta-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#6B7280" stroke-width="2"/>
+                    <circle cx="12" cy="9" r="2.5" stroke="#6B7280" stroke-width="2"/>
+                </svg>
+                <span>{{ event.location }}</span>
+            </div>
+        </div>
+        <a href="{{ url_for('event_detail', slug=event.slug) }}" class="card__btn">Подробнее</a>
+    </article>
+    {% else %}
+    <p class="empty-state">Мероприятия не найдены</p>
+    {% endfor %}
+</section>
+{% endblock %}

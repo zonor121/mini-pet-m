@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — EventHUB{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M15 18l-6-6 6-6" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>Назад к каталогу</span>
+</a>
+
+<div class="layout">
+    <!-- Left -->
+    <div class="event-info">
+        <div class="event-info__badges">
+            <span class="badge badge--seats">Свободно {{ event.available_seats }} из {{ event.total_seats }} мест</span>
+            <span class="badge badge--category">
+                {{ event.categories.name.upper() if event.categories else 'СОБЫТИЕ' }}
+            </span>
+        </div>
+
+        <h1 class="event-info__title">{{ event.title }}</h1>
+
+        <div class="event-meta">
+            <div class="event-meta__item">
+                <span class="event-meta__label">ДАТА И ВРЕМЯ</span>
+                <span class="event-meta__value">{{ fmt_date(event.event_date) }}</span>
+            </div>
+            <div class="event-meta__divider"></div>
+            <div class="event-meta__item">
+                <span class="event-meta__label">МЕСТО ПРОВЕДЕНИЯ</span>
+                <span class="event-meta__value">{{ event.location }}</span>
+            </div>
+            <div class="event-meta__divider"></div>
+            <div class="event-meta__item">
+                <span class="event-meta__label">ОРГАНИЗАТОР</span>
+                <span class="event-meta__value event-meta__value--link">
+                    {{ event.users.full_name if event.users else 'EventHUB' }}
+                </span>
+            </div>
+        </div>
+
+        <div class="event-description">
+            <h2 class="event-description__heading">Описание мероприятия</h2>
+            <p class="event-description__text">{{ event.description }}</p>
+        </div>
+    </div>
+
+    <!-- Right: Registration Form -->
+    <aside class="reg-form-wrap">
+        <div class="reg-form">
+            <h2 class="reg-form__title">Регистрация на событие</h2>
+            <p class="reg-form__subtitle">Заполните форму для получения билета</p>
+
+            {% if get_current_user() %}
+            <form action="{{ url_for('register', event_id=event.id) }}" method="POST" class="reg-form__form">
+                <input type="hidden" name="slug" value="{{ event.slug }}">
+
+                <div class="form-group">
+                    <label class="form-label">ФИО</label>
+                    <input type="text" class="form-input" value="{{ get_current_user().full_name }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" value="{{ get_current_user().email }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Комментарий</label>
+                    <input type="text" name="comment" class="form-input" placeholder="Напишите пожелание или вопрос...">
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
+            </form>
+            {% else %}
+            <div class="reg-form__login-prompt">
+                <p>Войдите, чтобы зарегистрироваться на мероприятие</p>
+                <form action="{{ url_for('login') }}" method="POST" class="login-inline login-inline--col">
+                    <input type="email" name="email" placeholder="Ваш email" required class="form-input">
+                    <button type="submit" class="btn btn--primary btn--full">Войти</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+</div>
+{% endblock %}
