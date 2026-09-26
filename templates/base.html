@@ -46,18 +46,16 @@
                 {% endif %}
             </nav>
 
-            <div class="header__actions">
+                        <div class="header__actions">
                 {% if get_current_user() %}
                     <span class="user-greeting">{{ get_current_user().full_name.split()[0] }}</span>
+                    <a href="{{ url_for('cabinet') }}" class="btn btn--ghost">Кабинет</a>
                     <a href="{{ url_for('logout') }}" class="btn btn--ghost">Выйти</a>
                 {% else %}
-                    <form action="{{ url_for('login') }}" method="POST" class="login-inline">
-                        <input type="email" name="email" placeholder="Email для входа" required class="login-input">
-                        <button type="submit" class="btn btn--primary">Войти</button>
-                    </form>
+                    <a href="{{ url_for('login') }}" class="btn btn--ghost">Войти</a>
+                    <a href="{{ url_for('register') }}" class="btn btn--primary">Регистрация</a>
                 {% endif %}
             </div>
-        </div>
     </header>
     {% endblock %}
 

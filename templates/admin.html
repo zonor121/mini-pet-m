@@ -2,14 +2,13 @@
 {% block title %}Панель управления — EventHUB{% endblock %}
 {% block body_class %}admin-body{% endblock %}
 
-{% block header %}
-<!-- Admin uses sidebar layout, no top header -->
-{% endblock %}
+<!-- Отключаем стандартный хедер, так как в админке свой layout -->
+{% block header %}{% endblock %}
 
 {% block content %}
 <div class="admin-layout">
 
-    <!-- Sidebar -->
+    <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar">
         <div class="sidebar__logo">
             <div class="sidebar__logo-icon">
@@ -21,6 +20,7 @@
             </div>
             <span class="sidebar__logo-text">Event<strong>HUB</strong></span>
         </div>
+
         <nav class="sidebar__nav">
             <a href="{{ url_for('index') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
@@ -35,79 +35,150 @@
                 <span>Настройки</span>
             </a>
         </nav>
-        <div class="sidebar__role"><span>Администратор</span></div>
+
+        <div class="sidebar__role">
+            <span>{{ get_current_user().full_name.split()[0] if get_current_user() else 'Админ' }}</span>
+        </div>
     </aside>
 
-    <!-- Main area -->
+    <!-- ===== MAIN AREA ===== -->
     <div class="main-area">
+        
+        <!-- Topbar -->
         <header class="topbar">
             <div class="topbar__left">
                 <h1 class="topbar__title">Панель управления</h1>
                 <p class="topbar__subtitle">Добро пожаловать в административный кабинет Event HUB</p>
             </div>
             <div class="topbar__right">
+                <div class="search-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="7" stroke="#9CA3AF" stroke-width="2"/>
+                        <path d="M20 20l-3.5-3.5" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" placeholder="Поиск по системе...">
+                </div>
                 <div class="user-badge">
                     <div class="user-badge__avatar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="8" r="4" stroke="white" stroke-width="2"/>
-                            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
+                        {{ get_current_user().full_name[0] if get_current_user() else 'A' }}
                     </div>
                     <div class="user-badge__info">
-                        <span class="user-badge__name">{{ get_current_user().full_name }}</span>
+                        <span class="user-badge__name">{{ get_current_user().full_name if get_current_user() else 'Администратор' }}</span>
                         <span class="user-badge__role">Роль: Super Admin</span>
                     </div>
                 </div>
-                <a href="{{ url_for('logout') }}" class="btn btn--ghost">Выйти</a>
+                <a href="{{ url_for('logout') }}" class="btn btn--ghost" style="margin-left: 10px;">Выйти</a>
             </div>
         </header>
 
+        <!-- Content -->
         <main class="content">
-            <!-- Stats -->
+            
+            <!-- Stats Cards (4 штуки) -->
             <section class="stats">
                 <div class="stat-card">
                     <div class="stat-card__top">
-                        <span class="stat-card__label">ВСЕГО РЕГИСТРАЦИЙ</span>
+                        <span class="stat-card__label">Всего регистраций</span>
                         <div class="stat-card__icon stat-card__icon--purple">👥</div>
                     </div>
-                    <div class="stat-card__value">{{ stats.total }}</div>
+                    <div class="stat-card__value">{{ stats.total_regs or 0 }}</div>
+                    <div class="stat-card__change stat-card__change--up">+12% за месяц</div>
                 </div>
+
                 <div class="stat-card">
                     <div class="stat-card__top">
-                        <span class="stat-card__label">АКТИВНЫЕ СОБЫТИЯ</span>
+                        <span class="stat-card__label">Активные события</span>
                         <div class="stat-card__icon stat-card__icon--blue">📅</div>
                     </div>
-                    <div class="stat-card__value">{{ stats.active }} событий</div>
+                    <div class="stat-card__value">{{ stats.active_events or 0 }}</div>
+                    <div class="stat-card__change stat-card__change--up">+4 новых</div>
                 </div>
+
                 <div class="stat-card">
                     <div class="stat-card__top">
-                        <span class="stat-card__label">ПРОЦЕНТ ОТКАЗОВ</span>
+                        <span class="stat-card__label">Общие сборы</span>
+                        <div class="stat-card__icon stat-card__icon--green">💰</div>
+                    </div>
+                    <div class="stat-card__value">0 ₽</div>
+                    <div class="stat-card__change stat-card__change--up">+8.2%</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card__top">
+                        <span class="stat-card__label">Процент отказов</span>
                         <div class="stat-card__icon stat-card__icon--red">⚠️</div>
                     </div>
-                    <div class="stat-card__value">{{ stats.cancel_rate }}%</div>
+                    <div class="stat-card__value">0%</div>
+                    <div class="stat-card__change stat-card__change--down">-0.8%</div>
                 </div>
             </section>
 
-            <!-- Table -->
+            <!-- Toolbar (Filters) -->
+            <section class="toolbar">
+                <div class="tabs">
+                    <button class="tab tab--active">Все</button>
+                    <button class="tab">Создана</button>
+                    <button class="tab">Подтверждена</button>
+                    <button class="tab">Посещено</button>
+                    <button class="tab">Отменена</button>
+                </div>
+                <button class="btn-export">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="margin-right: 6px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Экспорт CSV
+                </button>
+            </section>
+
+            <!-- Registrations Table -->
             <section class="registrations">
-                <h2 class="registrations__title">Все регистрации</h2>
+                <h2 class="registrations__title">Мои регистрации</h2>
                 <div class="table-wrap">
                     <table class="reg-table">
-                        <thead><tr>
-                            <th class="reg-table__th reg-table__th--event">МЕРОПРИЯТИЕ</th>
-                            <th class="reg-table__th reg-table__th--date">ДАТА</th>
-                            <th class="reg-table__th reg-table__th--status">СТАТУС</th>
-                        </tr></thead>
+                        <thead>
+                            <tr>
+                                <th class="reg-table__th reg-table__th--event">МЕРОПРИЯТИЕ</th>
+                                <th class="reg-table__th reg-table__th--date">ДАТА СОБЫТИЯ</th>
+                                <th class="reg-table__th reg-table__th--status">СТАТУС</th>
+                                <th class="reg-table__th reg-table__th--action">ДЕЙСТВИЕ</th>
+                            </tr>
+                        </thead>
                         <tbody>
                         {% for reg in registrations %}
                         <tr class="reg-table__row">
-                            <td class="reg-table__td reg-table__td--event">{{ reg.events.title }}</td>
-                            <td class="reg-table__td reg-table__td--date">{{ fmt_short_date(reg.events.event_date) }}</td>
-                            <td class="reg-table__td reg-table__td--status">
-                                {% if reg.status == 'confirmed' %}<span class="status status--confirmed">Подтверждена</span>
-                                {% elif reg.status == 'created' %}<span class="status status--created">Создана</span>
-                                {% else %}<span class="status status--cancelled">Отменена</span>{% endif %}
+                            <td class="reg-table__td reg-table__td--event">
+                                {{ reg.event_title if reg.event_title else reg.events.title if reg.events else 'Без названия' }}
                             </td>
+                            <td class="reg-table__td reg-table__td--date">
+                                {{ fmt_short_date(reg.event_date if reg.event_date else reg.events.event_date if reg.events else '') }}
+                            </td>
+                            <td class="reg-table__td reg-table__td--status">
+                                {% set status = reg.status %}
+                                {% if status == 'confirmed' %}
+                                    <span class="status status--confirmed">Подтверждена</span>
+                                {% elif status == 'created' %}
+                                    <span class="status status--created">Создана</span>
+                                {% elif status == 'cancelled_by_user' or status == 'cancelled_by_admin' %}
+                                    <span class="status status--cancelled-visit">Посещение отменено</span>
+                                {% elif status == 'rejected' %}
+                                    <span class="status status--cancelled">Отменена</span>
+                                {% else %}
+                                    <span class="status status--created">{{ status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="reg-table__td reg-table__td--action">
+                                {% if status in ['confirmed', 'created'] %}
+                                    <button class="btn-cancel" onclick="alert('Функция отмены в разработке')">Отменить</button>
+                                {% else %}
+                                    <span class="action-dash">&mdash;</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="empty-row">Нет данных о регистрациях</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -115,42 +186,61 @@
                 </div>
             </section>
 
-            <!-- Bottom row -->
+            <!-- Bottom Row -->
             <section class="bottom-row">
+                
+                <!-- Notifications -->
                 <div class="notifications">
                     <h3 class="panel-title">Системные уведомления</h3>
                     <ul class="notif-list">
-                    {% for n in notifications %}
                         <li class="notif-item">
-                            <span class="notif-dot notif-dot--{{ 'purple' if n.priority=='info' else 'green' if n.priority=='success' else 'orange' }}"></span>
-                            <span class="notif-item__text">{{ n.message }}</span>
+                            <span class="notif-dot notif-dot--purple"></span>
+                            <div>
+                                <span class="notif-item__text">Новая регистрация от пользователя <strong>Алексей Иванов</strong> на событие TechFuture 2024.</span>
+                                <span class="notif-item__time">2 мин назад</span>
+                            </div>
                         </li>
-                    {% else %}
-                        <li class="notif-item"><span class="notif-item__text">Нет уведомлений</span></li>
-                    {% endfor %}
+                        <li class="notif-item">
+                            <span class="notif-dot notif-dot--green"></span>
+                            <div>
+                                <span class="notif-item__text">Автоматический экспорт отчета за прошлую неделю успешно сформирован.</span>
+                                <span class="notif-item__time">1 час назад</span>
+                            </div>
+                        </li>
+                        <li class="notif-item">
+                            <span class="notif-dot notif-dot--orange"></span>
+                            <div>
+                                <span class="notif-item__text">Запрос на модерацию события "Крипто Весна 2024" ожидает вашего решения.</span>
+                                <span class="notif-item__time">3 часа назад</span>
+                            </div>
+                        </li>
                     </ul>
                 </div>
+
+                <!-- Status Stats -->
                 <div class="status-stats">
                     <h3 class="panel-title">Статистика статусов</h3>
                     <div class="status-stat-list">
                         <div class="status-stat-row">
                             <span class="status status--confirmed">Подтверждена</span>
                             <span class="status-stat-row__label">Подтверждено</span>
-                            <span class="status-stat-row__value">{{ stats.confirmed }}</span>
+                            <span class="status-stat-row__value">{{ stats.confirmed_regs or 0 }} (0%)</span>
                         </div>
                         <div class="status-stat-row">
                             <span class="status status--created">Создана</span>
                             <span class="status-stat-row__label">В очереди</span>
-                            <span class="status-stat-row__value">{{ stats.created }}</span>
+                            <span class="status-stat-row__value">0 (0%)</span>
                         </div>
                         <div class="status-stat-row">
                             <span class="status status--cancelled">Отменена</span>
                             <span class="status-stat-row__label">Отклонено</span>
-                            <span class="status-stat-row__value">{{ stats.cancelled }}</span>
+                            <span class="status-stat-row__value">0 (0%)</span>
                         </div>
                     </div>
                 </div>
+
             </section>
+
         </main>
     </div>
 </div>
