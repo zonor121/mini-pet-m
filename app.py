@@ -408,6 +408,18 @@ def cancel_registration(reg_id):
         
     return redirect(url_for("cabinet"))
 
+# ... импорты и создание app ...
+
+@app.route('/healthz')
+def health_check():
+    """
+    Эндпоинт для проверки работоспособности сервера (Render Health Check).
+    Не обращается к БД, отвечает мгновенно.
+    """
+    return jsonify({"status": "ok", "message": "EventHUB is running"}), 200
+
+# ... остальные роуты ...
+
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
