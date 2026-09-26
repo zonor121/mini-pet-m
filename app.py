@@ -432,35 +432,109 @@ def health_check():
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
-    # Аналитика (п. 8)
-    total_regs = supabase_admin.table("registrations").select("*", count="exact").execute().count
-    active_events = supabase_admin.table("events").select("*", count="exact").eq("status", "published").execute().count
-    total_users = supabase_admin.table("users").select("*", count="exact").execute().count
+    # Получаем фильтр из URL (?status=confirmed)
+    status_filter = request.args.get("status", "").strip()
+
+    # --- 1. Считаем общую статистику (всегда по всем данным) ---
+    total_regs = supabase_admin.table("registrations").select("*", count="exact").execute().count or 0
+    active_events = supabase_admin.table("events").select("*", count="exact").eq("status", "published").execute().count or 0
     
-    # Выручка (пример)
-    # В реальном проекте нужен JOIN или отдельная таблица платежей, здесь упрощенно
-    # Просто считаем сумму цен событий, на которые есть confirmed регистрации
-    # Для простоты покажем просто количество подтвержденных
-    confirmed_regs = supabase_admin.table("registrations").select("*", count="exact").eq("status", "confirmed").execute().count
+    # Выручка (сумма цен подтвержденных) - упрощенно
+    # Для точности нужен JOIN, но для лабы можно просто кол-во
+    confirmed_regs_count = supabase_admin.table("registrations").select("*", count="exact").eq("status", "confirmed").execute().count or 0
+    
+    # Процент отказов
+    cancelled_regs_count = supabase_admin.table("registrations").select("*", count="exact").in_("status", ["cancelled_by_user", "cancelled_by_admin", "rejected"]).execute().count or 0
+    cancel_rate = round((cancelled_regs_count / total_regs * 100), 1) if total_regs > 0 else 0
 
     stats = {
         "total_regs": total_regs,
         "active_events": active_events,
-        "total_users": total_users,
-        "confirmed_regs": confirmed_regs
+        "confirmed_regs": confirmed_regs_count,
+        "cancel_rate": cancel_rate,
+        "total_revenue": 0 # Заглушка, если нет таблицы платежей
     }
 
-    # В функции admin_dashboard замените запрос к registrations на запрос к view
-    regs = (
-        supabase_admin.table("admin_registrations_view") # Обращаемся к VIEW
+    # --- 2. Получаем список регистраций (с учетом фильтра) ---
+    query = (
+        supabase_admin.table("admin_registrations_view") # Используем VIEW
         .select("*")
         .order("registered_at", desc=True)
-        .limit(20)
-        .execute()
-        .data or []
+        .limit(50)
     )
 
-    return render_template("admin.html", stats=stats, registrations=regs)
+    # Применяем фильтр, если выбран
+    if status_filter:
+        query = query.eq("status", status_filter)
+
+    regs = query.execute().data or []
+
+    # --- 3. Статистика по статусам для правого блока ---
+    # (Можно оптимизировать, но для наглядности оставим так)
+    status_stats = {
+        "confirmed": confirmed_regs_count,
+        "created": supabase_admin.table("registrations").select("*", count="exact").eq("status", "created").execute().count or 0,
+        "cancelled": cancelled_regs_count
+    }
+
+    return render_template(
+        "admin.html", 
+        stats=stats, 
+        registrations=regs, 
+        status_stats=status_stats,
+        current_status_filter=status_filter # Передаем текущий фильтр в шаблон
+    )
+
+@app.route("/admin/cancel/<int:reg_id>", methods=["POST"])
+@admin_required
+def admin_cancel_registration(reg_id):
+    """Отмена регистрации администратором."""
+    try:
+        # 1. Получаем данные регистрации
+        reg_res = supabase_admin.table("registrations").select("*").eq("id", reg_id).single().execute()
+        reg = reg_res.data
+        
+        if not reg:
+            flash("Регистрация не найдена.", "danger")
+            return redirect(url_for("admin_dashboard"))
+        
+        # 2. Проверяем статус (бизнес-правило: нельзя отменить уже отмененное)
+        if reg["status"] in ["cancelled_by_user", "cancelled_by_admin", "rejected", "attended"]:
+            flash("Эту регистрацию нельзя отменить (она уже отменена или завершена).", "warning")
+            return redirect(url_for("admin_dashboard", status=request.args.get("status")))
+
+        # 3. Обновляем статус регистрации
+        supabase_admin.table("registrations").update({
+            "status": "cancelled_by_admin",
+            "cancelled_at": datetime.utcnow().isoformat()
+        }).eq("id", reg_id).execute()
+        
+        # 4. Возвращаем место (обычный UPDATE, без RPC)
+        event_id = reg["event_id"]
+        
+        # Получаем текущее количество мест
+        event_res = supabase_admin.table("events").select("available_seats, total_seats").eq("id", event_id).single().execute()
+        event = event_res.data
+        
+        if event:
+            new_available = event["available_seats"] + 1
+            # Защита от переполнения (нельзя больше чем total_seats)
+            if new_available > event["total_seats"]:
+                new_available = event["total_seats"]
+                
+            supabase_admin.table("events").update({
+                "available_seats": new_available
+            }).eq("id", event_id).execute()
+        
+        flash(f"Регистрация #{reg_id} успешно отменена.", "success")
+        
+    except Exception as e:
+        print(f"Error cancelling registration: {e}")
+        flash(f"Ошибка при отмене: {str(e)}", "danger")
+    
+    # Возвращаемся с сохранением фильтра
+    status_filter = request.args.get("status", "")
+    return redirect(url_for("admin_dashboard", status=status_filter))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
