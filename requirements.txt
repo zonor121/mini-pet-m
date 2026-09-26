@@ -1,3 +1,4 @@
 flask==3.1.*
 supabase==2.*
 python-dotenv==1.*
+gunicorn==23.*
