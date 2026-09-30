@@ -49,3 +49,18 @@ if (searchInput && filtersForm) {
     });
 }
 
+// ── Auto-hide Toast Notifications ────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const toasts = document.querySelectorAll('.toast');
+    
+    toasts.forEach(toast => {
+        // Удаляем через 4 секунды
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            // Ждем окончания анимации (0.3s) перед удалением из DOM
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 4000);
+    });
+});
