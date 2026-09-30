@@ -554,6 +554,50 @@ def admin_cancel_registration(reg_id):
     status_filter = request.args.get("status", "")
     return redirect(url_for("admin_dashboard", status=status_filter))
 
-    
+@app.route("/admin/users")
+@admin_required
+def admin_users():
+        """Страница управления пользователями."""
+        try:
+            # Получаем всех пользователей из таблицы public.users
+            # Сортируем по дате создания (новые сверху)
+            users_res = supabase_admin.table("users").select("*").order("created_at", desc=True).execute()
+            users = users_res.data or []
+            
+            # Если нужно показать email из Auth (если он отличается), можно сделать доп. запрос, 
+            # но обычно мы дублируем email в public.users при регистрации.
+            
+            return render_template("admin_users.html", users=users)
+            
+        except Exception as e:
+            print(f"Error loading users: {e}")
+            flash("Ошибка загрузки списка пользователей", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+# Опционально: Функция для изменения роли (пункт 6.4 - Админ может менять роли)
+@app.route("/admin/users/<user_id>/toggle_role", methods=["POST"])
+@admin_required
+def toggle_user_role(user_id):
+     """Переключение роли пользователя (User <-> Admin)."""
+     try:
+        # Получаем текущую роль
+        user_res = supabase_admin.table("users").select("role").eq("id", user_id).single().execute()
+        current_role = user_res.data.get("role")
+                
+                # Нельзя понизить самого себя (защита от блокировки)
+        if user_id == session['user']['id']:
+            flash("Нельзя изменить роль самому себе.", "warning")
+            return redirect(url_for("admin_users"))
+
+        new_role = "user" if current_role in ["admin", "super_admin"] else "admin"
+                
+        supabase_admin.table("users").update({"role": new_role}).eq("id", user_id).execute()
+        flash(f"Роль пользователя изменена на {new_role}", "success")
+                
+     except Exception as e:
+        flash(f"Ошибка: {str(e)}", "danger")
+                
+     return redirect(url_for("admin_users"))
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
