@@ -599,5 +599,52 @@ def toggle_user_role(user_id):
                 
      return redirect(url_for("admin_users"))
 
+@app.route("/admin/users/<user_id>/edit", methods=["POST"])
+@admin_required
+def edit_user(user_id):
+    """Редактирование данных пользователя администратором."""
+    try:
+        # Получаем данные из формы
+        full_name = request.form.get("full_name", "").strip()
+        role = request.form.get("role", "user")
+        is_active = request.form.get("is_active") == "on" # Checkbox возвращает 'on' или None
+
+        # Валидация
+        if not full_name:
+            flash("Имя не может быть пустым", "danger")
+            return redirect(url_for("admin_users"))
+
+        # Защита: нельзя понизить самого себя до обычного юзера или заблокировать
+        if user_id == session['user']['id']:
+            if role != session['user']['role']:
+                flash("Нельзя изменить собственную роль.", "warning")
+                return redirect(url_for("admin_users"))
+            if not is_active:
+                flash("Нельзя заблокировать самого себя.", "warning")
+                return redirect(url_for("admin_users"))
+
+        # Обновление в БД
+        update_data = {
+            "full_name": full_name,
+            "role": role,
+            "is_active": is_active,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        supabase_admin.table("users").update(update_data).eq("id", user_id).execute()
+        
+        # Если меняли роль текущего пользователя (например, super_admin -> admin), обновим сессию
+        if user_id == session['user']['id']:
+            session['user']['role'] = role
+            session['user']['full_name'] = full_name
+
+        flash("Данные пользователя успешно обновлены", "success")
+
+    except Exception as e:
+        print(f"Edit user error: {e}")
+        flash(f"Ошибка сохранения: {str(e)}", "danger")
+
+    return redirect(url_for("admin_users"))
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

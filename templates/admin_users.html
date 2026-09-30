@@ -1,19 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Управление пользователями — EventHUB{% endblock %}
 {% block body_class %}admin-body{% endblock %}
+
+<!-- Отключаем стандартный хедер, так как в админке свой layout -->
 {% block header %}{% endblock %}
 
 {% block content %}
 <div class="admin-layout">
 
-    <!-- ===== SIDEBAR (Копия из admin.html) ===== -->
+    <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar">
         <div class="sidebar__logo">
             <div class="sidebar__logo-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="white" stroke-width="2"/><path d="M3 10h18" stroke="white" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="4" width="18" height="18" rx="3" stroke="white" stroke-width="2"/>
+                    <path d="M3 10h18" stroke="white" stroke-width="2"/>
+                    <path d="M8 2v4M16 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
             </div>
             <span class="sidebar__logo-text">Event<strong>HUB</strong></span>
         </div>
+
         <nav class="sidebar__nav">
             <a href="{{ url_for('index') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
@@ -29,27 +36,31 @@
                 <span>Пользователи</span>
             </a>
         </nav>
+
         <div class="sidebar__role">
-            <span>{{ get_current_user().full_name.split()[0] }}</span>
+            <span>{{ get_current_user().full_name.split()[0] if get_current_user() else 'Админ' }}</span>
         </div>
     </aside>
 
     <!-- ===== MAIN AREA ===== -->
     <div class="main-area">
+        
+        <!-- Topbar -->
         <header class="topbar">
             <div class="topbar__left">
                 <h1 class="topbar__title">Пользователи системы</h1>
-                <p class="topbar__subtitle">Управление доступом и ролями</p>
+                <p class="topbar__subtitle">Управление доступом, ролями и блокировка аккаунтов</p>
             </div>
             <div class="topbar__right">
                 <a href="{{ url_for('logout') }}" class="btn btn--ghost">Выйти</a>
             </div>
         </header>
 
+        <!-- Content -->
         <main class="content">
             <section class="registrations">
                 <div class="table-wrap">
-                    <table class="reg-table">
+                    <table class="reg-table users-table">
                         <thead>
                             <tr>
                                 <th class="reg-table__th">ИМЯ</th>
@@ -57,16 +68,23 @@
                                 <th class="reg-table__th">РОЛЬ</th>
                                 <th class="reg-table__th">СТАТУС</th>
                                 <th class="reg-table__th">ДАТА РЕГИСТРАЦИИ</th>
-                                <th class="reg-table__th">ДЕЙСТВИЯ</th>
+                                <th class="reg-table__th" style="text-align: right;">ДЕЙСТВИЯ</th>
                             </tr>
                         </thead>
                         <tbody>
                         {% for user in users %}
                         <tr class="reg-table__row">
+                            <!-- 1. ИМЯ -->
                             <td class="reg-table__td">
                                 <strong>{{ user.full_name }}</strong>
                             </td>
-                            <td class="reg-table__td">{{ user.email }}</td>
+                            
+                            <!-- 2. EMAIL -->
+                            <td class="reg-table__td">
+                                {{ user.email }}
+                            </td>
+                            
+                            <!-- 3. РОЛЬ -->
                             <td class="reg-table__td">
                                 {% if user.role == 'super_admin' %}
                                     <span class="status status--cancelled-visit">Super Admin</span>
@@ -76,28 +94,45 @@
                                     <span class="status status--created">User</span>
                                 {% endif %}
                             </td>
+                            
+                            <!-- 4. СТАТУС -->
                             <td class="reg-table__td">
                                 {% if user.is_active %}
-                                    <span style="color: #10B981;">● Активен</span>
+                                    <span style="color: #10B981; font-weight: 500;">● Активен</span>
                                 {% else %}
-                                    <span style="color: #EF4444;">● Заблокирован</span>
+                                    <span style="color: #EF4444; font-weight: 500;">● Заблокирован</span>
                                 {% endif %}
                             </td>
-                            <td class="reg-table__td">{{ fmt_short_date(user.created_at) }}</td>
+                            
+                            <!-- 5. ДАТА -->
                             <td class="reg-table__td">
+                                {{ fmt_short_date(user.created_at) if user.created_at else '-' }}
+                            </td>
+                            
+                            <!-- 6. ДЕЙСТВИЯ -->
+                            <td class="reg-table__td" style="text-align: right;">
                                 {% if user.id != get_current_user().id %}
-                                    <form action="{{ url_for('toggle_user_role', user_id=user.id) }}" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn-cancel" style="font-size: 12px; padding: 4px 8px;">
-                                            {% if user.role == 'user' %}Сделать админом{% else %}Снять права{% endif %}
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button onclick="openEditModal('{{ user.id }}', '{{ user.full_name }}', '{{ user.email }}', '{{ user.role }}', {{ 'true' if user.is_active else 'false' }})" 
+                                                class="btn-cancel" style="background: #EEF2FF; color: #4F46E5; border-color: #C7D2FE;">
+                                            Изменить
                                         </button>
-                                    </form>
+                                        
+                                        <form action="{{ url_for('toggle_user_role', user_id=user.id) }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn-cancel" onclick="return confirm('Изменить роль?')">
+                                                {% if user.role == 'user' %}В админы{% else %}Снять права{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
                                 {% else %}
-                                    <span style="color: #9CA3AF; font-size: 12px;">Это вы</span>
+                                    <span style="color: #9CA3AF; font-style: italic;">Это вы</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="6" class="empty-row">Пользователи не найдены</td></tr>
+                        <tr>
+                            <td colspan="6" class="empty-row">Пользователи не найдены</td>
+                        </tr>
                         {% endfor %}
                         </tbody>
                     </table>
@@ -106,4 +141,80 @@
         </main>
     </div>
 </div>
+
+<!-- ===== MODAL WINDOW ===== -->
+<div id="editUserModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Редактирование пользователя</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="editUserForm" method="POST" action="">
+            <div class="form-group">
+                <label class="form-label">Имя и Фамилия</label>
+                <input type="text" name="full_name" id="edit_full_name" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email (изменение недоступно)</label>
+                <input type="email" id="edit_email" class="form-input" disabled style="background: #F3F4F6; color: #6B7280;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Роль в системе</label>
+                <select name="role" id="edit_role" class="form-input">
+                    <option value="user">Пользователь</option>
+                    <option value="admin">Администратор</option>
+                    <option value="super_admin">Супер Администратор</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                <input type="checkbox" name="is_active" id="edit_is_active" style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="edit_is_active" style="margin: 0; cursor: pointer; font-size: 14px; color: #374151;">Активен (не заблокирован)</label>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn--ghost" onclick="closeModal()">Отмена</button>
+                <button type="submit" class="btn btn--primary">Сохранить изменения</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Функция открытия модального окна
+    function openEditModal(userId, fullName, email, role, isActive) {
+        const modal = document.getElementById('editUserModal');
+        const form = document.getElementById('editUserForm');
+        
+        // Заполняем поля данными
+        document.getElementById('edit_full_name').value = fullName;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_role').value = role;
+        document.getElementById('edit_is_active').checked = isActive;
+        
+        // Устанавливаем адрес отправки формы
+        form.action = "/admin/users/" + userId + "/edit";
+        
+        // Показываем окно
+        modal.style.display = 'flex';
+    }
+
+    // Функция закрытия
+    function closeModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+
+    // Закрытие при клике вне окна
+    window.onclick = function(event) {
+        const modal = document.getElementById('editUserModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+</script>
 {% endblock %}
