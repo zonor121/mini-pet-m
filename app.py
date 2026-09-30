@@ -432,57 +432,75 @@ def health_check():
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
-    # Получаем фильтр из URL (?status=confirmed)
     status_filter = request.args.get("status", "").strip()
-
-    # --- 1. Считаем общую статистику (всегда по всем данным) ---
-    total_regs = supabase_admin.table("registrations").select("*", count="exact").execute().count or 0
-    active_events = supabase_admin.table("events").select("*", count="exact").eq("status", "published").execute().count or 0
     
-    # Выручка (сумма цен подтвержденных) - упрощенно
-    # Для точности нужен JOIN, но для лабы можно просто кол-во
-    confirmed_regs_count = supabase_admin.table("registrations").select("*", count="exact").eq("status", "confirmed").execute().count or 0
-    
-    # Процент отказов
-    cancelled_regs_count = supabase_admin.table("registrations").select("*", count="exact").in_("status", ["cancelled_by_user", "cancelled_by_admin", "rejected"]).execute().count or 0
-    cancel_rate = round((cancelled_regs_count / total_regs * 100), 1) if total_regs > 0 else 0
+    # Значения по умолчанию
+    stats = {"total_regs": 0, "active_events": 0, "total_users": 0, "revenue": 0, "cancel_rate": 0}
+    status_stats = {"confirmed": 0, "created": 0, "cancelled": 0}
+    regs = []
 
-    stats = {
-        "total_regs": total_regs,
-        "active_events": active_events,
-        "confirmed_regs": confirmed_regs_count,
-        "cancel_rate": cancel_rate,
-        "total_revenue": 0 # Заглушка, если нет таблицы платежей
-    }
+    try:
+        # Простая функция подсчета
+        def count_rows(table, filters=None):
+            q = supabase_admin.table(table).select("id", count="exact")
+            if filters:
+                for k, v in filters.items():
+                    if isinstance(v, list): q = q.in_(k, v)
+                    else: q = q.eq(k, v)
+            res = q.execute()
+            return int(res.count) if hasattr(res, 'count') else len(res.data)
 
-    # --- 2. Получаем список регистраций (с учетом фильтра) ---
-    query = (
-        supabase_admin.table("admin_registrations_view") # Используем VIEW
-        .select("*")
-        .order("registered_at", desc=True)
-        .limit(50)
-    )
+        # Считаем
+        total_regs = count_rows("registrations")
+        active_events = count_rows("events", {"status": "published"})
+        total_users = count_rows("users")
+        
+        confirmed = count_rows("registrations", {"status": "confirmed"})
+        created = count_rows("registrations", {"status": "created"})
+        cancelled = count_rows("registrations", {"status": ["cancelled_by_user", "cancelled_by_admin", "rejected"]})
+        
+        cancel_rate = round((cancelled / total_regs * 100), 1) if total_regs > 0 else 0
+        
+        # Выручка (простая)
+        revenue = 0
+        try:
+            conf_regs = supabase_admin.table("registrations").select("event_id").eq("status", "confirmed").execute().data
+            if conf_regs:
+                ids = list(set(r['event_id'] for r in conf_regs))
+                prices = supabase_admin.table("events").select("price").in_("id", ids).execute().data
+                revenue = sum(float(p['price']) for p in prices)
+        except: pass
 
-    # Применяем фильтр, если выбран
-    if status_filter:
-        query = query.eq("status", status_filter)
+        stats = {
+            "total_regs": total_regs, "active_events": active_events, 
+            "total_users": total_users, "revenue": revenue, "cancel_rate": cancel_rate
+        }
+        
+        # Передаем просто числа для CSS-графика
+        status_stats = {
+            "confirmed": confirmed,
+            "created": created,
+            "cancelled": cancelled,
+            "total": confirmed + created + cancelled # Для расчета процентов ширины
+        }
 
-    regs = query.execute().data or []
+        # Список регистраций
+        q = supabase_admin.table("registrations").select("*, events(title, event_date)").order("registered_at", desc=True).limit(50)
+        if status_filter:
+            if status_filter == 'cancelled': q = q.in_("status", ["cancelled_by_user", "cancelled_by_admin", "rejected"])
+            else: q = q.eq("status", status_filter)
+        regs = q.execute().data or []
 
-    # --- 3. Статистика по статусам для правого блока ---
-    # (Можно оптимизировать, но для наглядности оставим так)
-    status_stats = {
-        "confirmed": confirmed_regs_count,
-        "created": supabase_admin.table("registrations").select("*", count="exact").eq("status", "created").execute().count or 0,
-        "cancelled": cancelled_regs_count
-    }
+    except Exception as e:
+        print(f"Error: {e}")
+        flash("Ошибка загрузки данных", "warning")
 
     return render_template(
         "admin.html", 
         stats=stats, 
         registrations=regs, 
-        status_stats=status_stats,
-        current_status_filter=status_filter # Передаем текущий фильтр в шаблон
+        status_stats=status_stats, # Передаем словарь с числами
+        current_status_filter=status_filter
     )
 
 @app.route("/admin/cancel/<int:reg_id>", methods=["POST"])
@@ -536,5 +554,6 @@ def admin_cancel_registration(reg_id):
     status_filter = request.args.get("status", "")
     return redirect(url_for("admin_dashboard", status=status_filter))
 
+    
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

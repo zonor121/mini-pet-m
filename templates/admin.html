@@ -81,8 +81,8 @@
                         <span class="stat-card__label">Всего регистраций</span>
                         <div class="stat-card__icon stat-card__icon--purple">👥</div>
                     </div>
-                    <div class="stat-card__value">{{ stats.total_regs or 0 }}</div>
-                    <div class="stat-card__change stat-card__change--up">+12% за месяц</div>
+                    <div class="stat-card__value">{{ stats.total_regs }}</div>
+                    <div class="stat-card__change stat-card__change--up">+{{ stats.total_users }} юзеров</div>
                 </div>
 
                 <div class="stat-card">
@@ -90,8 +90,8 @@
                         <span class="stat-card__label">Активные события</span>
                         <div class="stat-card__icon stat-card__icon--blue">📅</div>
                     </div>
-                    <div class="stat-card__value">{{ stats.active_events or 0 }}</div>
-                    <div class="stat-card__change stat-card__change--up">+4 новых</div>
+                    <div class="stat-card__value">{{ stats.active_events }}</div>
+                    <div class="stat-card__change stat-card__change--up">Опубликовано</div>
                 </div>
 
                 <div class="stat-card">
@@ -99,8 +99,8 @@
                         <span class="stat-card__label">Общие сборы</span>
                         <div class="stat-card__icon stat-card__icon--green">💰</div>
                     </div>
-                    <div class="stat-card__value">0 ₽</div>
-                    <div class="stat-card__change stat-card__change--up">+8.2%</div>
+                    <div class="stat-card__value">{{ "{:,.0f}".format(stats.revenue) }} ₽</div>
+                    <div class="stat-card__change stat-card__change--up">Выручка</div>
                 </div>
 
                 <div class="stat-card">
@@ -108,42 +108,28 @@
                         <span class="stat-card__label">Процент отказов</span>
                         <div class="stat-card__icon stat-card__icon--red">⚠️</div>
                     </div>
-                    <div class="stat-card__value">0%</div>
-                    <div class="stat-card__change stat-card__change--down">-0.8%</div>
+                    <div class="stat-card__value">{{ stats.cancel_rate }}%</div>
+                    <div class="stat-card__change stat-card__change--down">Отменено</div>
                 </div>
             </section>
 
-           <!-- Toolbar (Filters) -->
+            <!-- Toolbar (Filters) -->
             <section class="toolbar">
                 <div class="tabs">
-                    <!-- Ссылка "Все" ведет просто на /admin без параметров -->
                     <a href="{{ url_for('admin_dashboard') }}" 
-                    class="tab {% if not current_status_filter %}tab--active{% endif %}">
-                        Все
-                    </a>
+                       class="tab {% if not current_status_filter %}tab--active{% endif %}">Все</a>
                     
                     <a href="{{ url_for('admin_dashboard', status='created') }}" 
-                    class="tab {% if current_status_filter == 'created' %}tab--active{% endif %}">
-                        Создана
-                    </a>
+                       class="tab {% if current_status_filter == 'created' %}tab--active{% endif %}">Создана</a>
                     
                     <a href="{{ url_for('admin_dashboard', status='confirmed') }}" 
-                    class="tab {% if current_status_filter == 'confirmed' %}tab--active{% endif %}">
-                        Подтверждена
-                    </a>
+                       class="tab {% if current_status_filter == 'confirmed' %}tab--active{% endif %}">Подтверждена</a>
                     
-                    <!-- Если у вас есть статус 'attended' (Посещено) -->
                     <a href="{{ url_for('admin_dashboard', status='attended') }}" 
-                    class="tab {% if current_status_filter == 'attended' %}tab--active{% endif %}">
-                        Посещено
-                    </a>
+                       class="tab {% if current_status_filter == 'attended' %}tab--active{% endif %}">Посещено</a>
                     
-                    <!-- Фильтр по отмененным (нужно обрабатывать несколько статусов или один общий) -->
-                    <!-- Для простоты фильтруем по cancelled_by_user, либо можно доработать бэкенд -->
-                    <a href="{{ url_for('admin_dashboard', status='cancelled_by_user') }}" 
-                    class="tab {% if current_status_filter == 'cancelled_by_user' %}tab--active{% endif %}">
-                        Отменена
-                    </a>
+                    <a href="{{ url_for('admin_dashboard', status='cancelled') }}" 
+                       class="tab {% if current_status_filter == 'cancelled' %}tab--active{% endif %}">Отменена</a>
                 </div>
                 
                 <button class="btn-export" onclick="alert('Экспорт в разработке')">
@@ -193,10 +179,8 @@
                                 {% endif %}
                             </td>
                             <td class="reg-table__td reg-table__td--action">
-                                {% set status = reg.status %}
                                 {% if status in ['confirmed', 'created'] %}
                                     <form action="{{ url_for('admin_cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline;">
-                                        <!-- Сохраняем текущий фильтр, чтобы после отмены остаться на той же вкладке -->
                                         <input type="hidden" name="current_status" value="{{ current_status_filter }}">
                                         <button type="submit" class="btn-cancel" 
                                                 onclick="return confirm('Вы уверены, что хотите отменить эту регистрацию?')">
@@ -251,31 +235,56 @@
                     </ul>
                 </div>
 
-                <!-- Status Stats -->
-                <div class="status-stats">
-                    <h3 class="panel-title">Статистика статусов</h3>
-                    <div class="status-stat-list">
-                        <div class="status-stat-row">
-                            <span class="status status--confirmed">Подтверждена</span>
-                            <span class="status-stat-row__label">Подтверждено</span>
-                            <span class="status-stat-row__value">{{ stats.confirmed_regs or 0 }} (0%)</span>
-                        </div>
-                        <div class="status-stat-row">
-                            <span class="status status--created">Создана</span>
-                            <span class="status-stat-row__label">В очереди</span>
-                            <span class="status-stat-row__value">0 (0%)</span>
-                        </div>
-                        <div class="status-stat-row">
-                            <span class="status status--cancelled">Отменена</span>
-                            <span class="status-stat-row__label">Отклонено</span>
-                            <span class="status-stat-row__value">0 (0%)</span>
-                        </div>
-                    </div>
+                <!-- Status Stats & CSS Chart -->
+<div class="status-stats">
+    <h3 class="panel-title">Статистика статусов</h3>
+    
+    <!-- CSS Bar Chart -->
+    <div class="css-chart">
+        {% set total = status_stats.total if status_stats.total > 0 else 1 %}
+        
+        <!-- Bar 1: Confirmed -->
+        <div class="chart-row">
+            <div class="chart-label">Подтверждены</div>
+            <div class="chart-bar-bg">
+                <div class="chart-bar-fill bg-green" 
+                     style="width: {{ (status_stats.confirmed / total * 100) | round(1) }}%">
                 </div>
+            </div>
+            <div class="chart-value">{{ status_stats.confirmed }}</div>
+        </div>
 
+        <!-- Bar 2: Created -->
+        <div class="chart-row">
+            <div class="chart-label">В ожидании</div>
+            <div class="chart-bar-bg">
+                <div class="chart-bar-fill bg-purple" 
+                     style="width: {{ (status_stats.created / total * 100) | round(1) }}%">
+                </div>
+            </div>
+            <div class="chart-value">{{ status_stats.created }}</div>
+        </div>
+
+        <!-- Bar 3: Cancelled -->
+        <div class="chart-row">
+            <div class="chart-label">Отменены</div>
+            <div class="chart-bar-bg">
+                <div class="chart-bar-fill bg-red" 
+                     style="width: {{ (status_stats.cancelled / total * 100) | round(1) }}%">
+                </div>
+            </div>
+            <div class="chart-value">{{ status_stats.cancelled }}</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; font-size: 12px; color: #9CA3AF; text-align: center;">
+        Визуализация распределения регистраций
+    </div>
+</div>
             </section>
 
         </main>
     </div>
 </div>
 {% endblock %}
+

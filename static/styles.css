@@ -1522,3 +1522,52 @@ button, input, select { font-family: 'Inter', sans-serif; }
         transform: translateY(0);
     }
 }
+
+/* ============================================================
+   CSS BAR CHART (Админка)
+   ============================================================ */
+   .css-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.chart-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chart-label {
+    width: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B7280;
+    text-align: right;
+}
+
+.chart-bar-bg {
+    flex: 1;
+    height: 12px;
+    background-color: #F3F4F6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.chart-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease-out;
+}
+
+.bg-green { background-color: #10B981; }
+.bg-purple { background-color: #6366F1; }
+.bg-red { background-color: #EF4444; }
+
+.chart-value {
+    width: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1F2937;
+}
