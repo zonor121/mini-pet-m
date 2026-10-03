@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 from services.supabase_client import supabase_admin as supabase
+from services.supabase_client import create_client
 
 load_dotenv()
 
