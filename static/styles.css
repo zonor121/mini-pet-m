@@ -1573,50 +1573,71 @@ button, input, select { font-family: 'Inter', sans-serif; }
 }
 
 /* ============================================================
-   USERS TABLE (EXPANDABLE)
+   USERS TABLE (FULL WIDTH FIX)
    ============================================================ */
    .table-wrap {
     width: 100%;
-    overflow-x: auto; /* Включаем горизонтальный скролл, если таблица шире экрана */
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto; /* Скролл только если экран очень узкий */
 }
 
 .users-table {
-    width: max-content; /* Таблица занимает ровно столько, сколько нужно контенту */
-    min-width: 100%;    /* Но не меньше ширины контейнера */
+    width: 100%; /* Растягиваем на всю ширину контейнера */
     border-collapse: collapse;
-    table-layout: auto;
+    table-layout: fixed; /* Фиксируем макет, чтобы колонки не прыгали */
 }
 
+/* Распределение ширины колонок */
+.users-table th:nth-child(1), 
+.users-table td:nth-child(1) { width: 20%; } /* Имя */
+
+.users-table th:nth-child(2), 
+.users-table td:nth-child(2) { width: 25%; } /* Email */
+
+.users-table th:nth-child(3), 
+.users-table td:nth-child(3) { width: 12%; } /* Роль */
+
+.users-table th:nth-child(4), 
+.users-table td:nth-child(4) { width: 12%; } /* Статус */
+
+.users-table th:nth-child(5), 
+.users-table td:nth-child(5) { width: 15%; } /* Дата */
+
+.users-table th:nth-child(6), 
+.users-table td:nth-child(6) { width: 16%; text-align: right; } /* Действия */
+
+/* Стилизация ячеек */
 .users-table .reg-table__th,
 .users-table .reg-table__td {
     padding: 16px 12px;
     vertical-align: middle;
-    white-space: nowrap; /* Текст не переносится, ячейка расширяется */
+    overflow: hidden; /* Скрываем переполнение */
+    text-overflow: ellipsis; /* Многоточие если текст не влезает */
 }
 
-/* Email: разрешаем перенос ТОЛЬКО если слово слишком длинное, 
-   но обычно nowrap + max-content заставит таблицу расшириться */
-.users-table .reg-table__td:nth-child(2) {
+/* Для Email разрешаем перенос, чтобы не резать слова, если колонка узкая */
+.users-table td:nth-child(2) {
     white-space: normal;
     word-break: break-word;
-    min-width: 200px; /* Минимальная ширина для email, чтобы он не сжимался в точку */
 }
 
-/* Колонка действий: фиксируем минимальную ширину под две кнопки */
-.users-table .reg-table__td:last-child {
+/* Для остальных ячеек запрещаем перенос */
+.users-table td:not(:nth-child(2)) {
     white-space: nowrap;
-    text-align: right;
-    min-width: 220px; /* Достаточно для двух кнопок + отступы */
 }
 
-/* Кнопки */
+/* Кнопки действий */
+.users-table .action-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    flex-wrap: nowrap; /* Кнопки не переносятся */
+}
+
 .users-table .btn-cancel {
-    display: inline-block;
-    margin-left: 4px;
-    font-size: 12px;
-    padding: 6px 10px;
+    font-size: 11px;
+    padding: 5px 8px;
     white-space: nowrap;
+    flex-shrink: 0; /* Кнопки не сжимаются */
 }
 
 /* ============================================================

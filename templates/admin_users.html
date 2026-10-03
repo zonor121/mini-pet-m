@@ -75,12 +75,12 @@
                         {% for user in users %}
                         <tr class="reg-table__row">
                             <!-- 1. ИМЯ -->
-                            <td class="reg-table__td">
+                            <td class="reg-table__td" title="{{ user.full_name }}">
                                 <strong>{{ user.full_name }}</strong>
                             </td>
                             
                             <!-- 2. EMAIL -->
-                            <td class="reg-table__td">
+                            <td class="reg-table__td" title="{{ user.email }}">
                                 {{ user.email }}
                             </td>
                             
@@ -110,22 +110,17 @@
                             </td>
                             
                             <!-- 6. ДЕЙСТВИЯ -->
-                            <td class="reg-table__td" style="text-align: right;">
+                            <td class="reg-table__td">
                                 {% if user.id != get_current_user().id %}
-                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                    <div class="action-buttons">
+                                        <!-- Оставляем только кнопку редактирования -->
                                         <button onclick="openEditModal('{{ user.id }}', '{{ user.full_name }}', '{{ user.email }}', '{{ user.role }}', {{ 'true' if user.is_active else 'false' }})" 
-                                                class="btn-cancel" style="background: #EEF2FF; color: #4F46E5; border-color: #C7D2FE;">
-                                            Изменить
+                                                class="btn-cancel" style="background: #EEF2FF; color: #4F46E5; border-color: #C7D2FE; width: 100%;">
+                                            Редактировать
                                         </button>
-                                        
-                                        <form action="{{ url_for('toggle_user_role', user_id=user.id) }}" method="POST" style="display:inline;">
-                                            <button type="submit" class="btn-cancel" onclick="return confirm('Изменить роль?')">
-                                                {% if user.role == 'user' %}В админы{% else %}Снять права{% endif %}
-                                            </button>
-                                        </form>
                                     </div>
                                 {% else %}
-                                    <span style="color: #9CA3AF; font-style: italic;">Это вы</span>
+                                    <span style="color: #9CA3AF; font-size: 12px; font-style: italic; display: block; text-align: center;">Это вы</span>
                                 {% endif %}
                             </td>
                         </tr>
