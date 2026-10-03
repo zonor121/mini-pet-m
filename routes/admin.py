@@ -1,12 +1,11 @@
 import csv
 import io
-from datetime import datetime
 import codecs
-
+from datetime import datetime
 from flask import Blueprint, Response, flash, redirect, render_template, request, session, url_for
-
-from services.security import admin_required, get_current_user, super_admin_required
+from services.security import admin_required, super_admin_required, get_current_user
 from services.supabase_client import supabase_admin
+from services.log_service import log_status_change
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -14,19 +13,18 @@ admin_bp = Blueprint("admin", __name__)
 @admin_bp.route("/admin")
 @admin_required
 def admin_dashboard():
-    """Панель аналитики и реестр регистраций."""
     status_filter = request.args.get("status", "").strip()
     user_filter = request.args.get("user_id", "").strip()
 
-    # Значения по умолчанию
-    stats = {"total_regs": 0, "active_events": 0, "total_users": 0, "revenue": 0.0, "cancel_rate": 0.0}
-    status_stats = {"confirmed": 0, "created": 0, "cancelled": 0, "attended": 0, "total": 0}
+    stats = {"total_regs": 0, "active_events": 0, "revenue": 0.0, "cancel_rate": 0.0}
+    status_stats = {"confirmed": 0, "created": 0, "attended": 0, "cancelled": 0, "total": 0}
     regs = []
     all_users = []
+    logs_map = {}
 
     try:
-        # --- 1. Статистика (простые запросы count) ---
-        def get_count(table, filters=None):
+        # Подсчет статистики
+        def count(table, filters=None):
             q = supabase_admin.table(table).select("id", count="exact")
             if filters:
                 for k, v in filters.items():
@@ -34,125 +32,92 @@ def admin_dashboard():
             res = q.execute()
             return int(res.count) if hasattr(res, "count") else len(res.data or [])
 
-        total_regs = get_count("registrations")
-        active_events = get_count("events", {"status": "published"})
-        total_users = get_count("users")
-        
-        confirmed = get_count("registrations", {"status": "confirmed"})
-        created = get_count("registrations", {"status": "created"})
-        attended = get_count("registrations", {"status": "attended"})
-        cancelled = get_count("registrations", {"status": ["cancelled_by_user", "cancelled_by_admin", "rejected"]})
-
-        cancel_rate = round((cancelled / total_regs) * 100, 1) if total_regs > 0 else 0.0
-
-        # Выручка (упрощенно: сумма цен событий с подтвержденными/посещенными регистрациями)
-        revenue = 0.0
-        try:
-            paid_regs = supabase_admin.table("registrations").select("event_id").in_("status", ["confirmed", "attended"]).execute().data
-            if paid_regs:
-                ids = list(set(r["event_id"] for r in paid_regs))
-                prices = supabase_admin.table("events").select("price").in_("id", ids).execute().data
-                # Грубая оценка выручки (сумма цен уникальных событий, где есть продажи)
-                revenue = sum(float(p["price"]) for p in prices if p.get("price"))
-        except Exception:
-            pass
+        total_regs = count("registrations")
+        confirmed = count("registrations", {"status": "confirmed"})
+        created = count("registrations", {"status": "created"})
+        attended = count("registrations", {"status": "attended"})
+        cancelled = count("registrations", {"status": ["cancelled_by_user", "cancelled_by_admin", "rejected"]})
 
         stats = {
-            "total_regs": total_regs, "active_events": active_events,
-            "total_users": total_users, "revenue": revenue, "cancel_rate": cancel_rate
+            "total_regs": total_regs,
+            "active_events": count("events", {"status": "published"}),
+            "revenue": 0.0,  # Упрощено для стабильности
+            "cancel_rate": round((cancelled / total_regs * 100), 1) if total_regs > 0 else 0.0
         }
         status_stats = {
-            "confirmed": confirmed, "created": created, "cancelled": cancelled, 
-            "attended": attended, "total": confirmed + created + cancelled + attended
+            "confirmed": confirmed, "created": created, 
+            "attended": attended, "cancelled": cancelled,
+            "total": confirmed + created + attended + cancelled
         }
 
-        # --- 2. Список пользователей для фильтра ---
+        # Список пользователей для фильтра
         all_users = supabase_admin.table("users").select("id, full_name").order("full_name").execute().data or []
 
-        # --- 3. Реестр регистраций (через VIEW) ---
+        # Реестр через VIEW
         query = supabase_admin.table("admin_registrations_view").select("*").order("registered_at", desc=True).limit(100)
-
         if status_filter == "cancelled":
             query = query.in_("status", ["cancelled_by_user", "cancelled_by_admin", "rejected"])
         elif status_filter:
             query = query.eq("status", status_filter)
-
         if user_filter:
             query = query.eq("user_id", user_filter)
-
+            
         regs = query.execute().data or []
+
+        # Загрузка логов для tooltip (п. 6.9)
+        if regs:
+            reg_ids = [r["id"] for r in regs]
+            logs_res = supabase_admin.table("registration_logs").select("*").in_("registration_id", reg_ids).order("created_at", desc=True).execute()
+            for log in logs_res.data:
+                rid = log["registration_id"]
+                if rid not in logs_map:
+                    logs_map[rid] = []
+                logs_map[rid].append(log)
 
     except Exception as e:
         print(f"ADMIN ERROR: {e}")
         flash("Ошибка загрузки данных панели.", "warning")
 
     return render_template(
-        "admin.html",
-        stats=stats,
-        registrations=regs,
-        status_stats=status_stats,
-        all_users=all_users,
-        current_status_filter=status_filter
+        "admin.html", stats=stats, registrations=regs, 
+        status_stats=status_stats, all_users=all_users, 
+        logs_map=logs_map, current_status_filter=status_filter
     )
 
 
 @admin_bp.route("/admin/export")
 @admin_required
 def export_csv():
-    """Экспорт регистраций в CSV с правильной кодировкой для Excel."""
-    status_filter = request.args.get("status", "").strip()
-    user_filter = request.args.get("user_id", "").strip()
-
+    """Экспорт с BOM для корректной кириллицы в Excel (п. 6.8, 12.6)."""
     try:
         query = supabase_admin.table("admin_registrations_view").select("*").order("registered_at", desc=True)
-
+        status_filter = request.args.get("status", "").strip()
         if status_filter == "cancelled":
             query = query.in_("status", ["cancelled_by_user", "cancelled_by_admin", "rejected"])
         elif status_filter:
             query = query.eq("status", status_filter)
-        if user_filter:
-            query = query.eq("user_id", user_filter)
-
+            
         regs = query.execute().data or []
 
-        # Создаем строковый буфер
         output = io.StringIO()
+        output.write(codecs.BOM_UTF8.decode("utf-8"))  # Ключ к правильной кодировке
         
-        # ЗАПИСЫВАЕМ BOM (маркер кодировки UTF-8) в самое начало
-        # Это заставляет Excel понимать, что файл в UTF-8
-        output.write(codecs.BOM_UTF8.decode('utf-8')) 
-        
-        writer = csv.writer(output, delimiter=';') # Используем точку с запятой, так Excel лучше понимает колонки в РФ
-        
-        # Заголовки
-        writer.writerow(["ID", "Мероприятие", "Дата события", "Участник", "Email", "Статус", "Дата регистрации"])
+        writer = csv.writer(output, delimiter=";")
+        writer.writerow(["ID", "Мероприятие", "Дата", "Участник", "Email", "Телефон", "Статус", "Дата рег."])
 
         for reg in regs:
-            phone = reg.get("reg_phone") or reg.get("user_phone") or ""
             writer.writerow([
-                reg.get("id"),
-                reg.get("event_title", "N/A"),
-                reg.get("event_date", "")[:10] if reg.get("event_date") else "",
-                reg.get("user_name", "Unknown"),
-                reg.get("user_email", ""),
-                phone,
-                reg.get("status"),
-                reg.get("registered_at", "")[:10] if reg.get("registered_at") else ""
+                reg.get("id"), reg.get("event_title"), 
+                reg.get("event_date", "")[:10], reg.get("user_name"),
+                reg.get("user_email"), reg.get("reg_phone") or reg.get("user_phone", ""),
+                reg.get("status"), reg.get("registered_at", "")[:10]
             ])
 
-        # Получаем содержимое
-        csv_content = output.getvalue()
-        
-        # Возвращаем файл
-        # Важно: mimetype должен быть text/csv, но кодировку мы уже внедрили через BOM
         return Response(
-            csv_content,
-            mimetype="text/csv; charset=utf-8-sig", # charset=utf-8-sig тоже помогает браузерам
+            output.getvalue(), mimetype="text/csv; charset=utf-8-sig",
             headers={"Content-Disposition": "attachment;filename=registrations.csv"}
         )
-        
     except Exception as e:
-        print(f"Export error: {e}")
         flash(f"Ошибка экспорта: {e}", "danger")
         return redirect(url_for("admin.admin_dashboard"))
 
@@ -160,56 +125,45 @@ def export_csv():
 @admin_bp.route("/admin/cancel/<int:reg_id>", methods=["POST"])
 @admin_required
 def admin_cancel_registration(reg_id):
-    """Отмена регистрации организатором."""
     try:
-        # 1. Получаем данные регистрации
-        # Используем .maybe_single() или проверяем .data явно
         res = supabase_admin.table("registrations").select("*").eq("id", reg_id).execute()
-        
-        # В зависимости от версии библиотеки, данные могут быть в res.data (список) или res.data (объект)
         if not res.data:
             flash("Регистрация не найдена.", "warning")
             return redirect(url_for("admin.admin_dashboard"))
             
-        # Если вернулся список, берем первый элемент
         reg = res.data[0] if isinstance(res.data, list) else res.data
+        old_status = reg.get("status")
 
-        # 2. Проверяем статус (нельзя отменить уже отмененное или посещенное)
-        if reg.get("status") in ["cancelled_by_user", "cancelled_by_admin", "rejected", "attended"]:
-            flash("Эту заявку нельзя отменить (она уже закрыта).", "warning")
+        if old_status in ["cancelled_by_user", "cancelled_by_admin", "rejected", "attended"]:
+            flash("Эту заявку нельзя отменить.", "warning")
             return redirect(url_for("admin.admin_dashboard"))
 
-        # 3. Обновляем статус
         supabase_admin.table("registrations").update({
-            "status": "cancelled_by_admin",
-            "cancelled_at": datetime.utcnow().isoformat()
+            "status": "cancelled_by_admin", "cancelled_at": datetime.utcnow().isoformat()
         }).eq("id", reg_id).execute()
 
-        # 4. Возвращаем место
-        # Получаем ID события из найденной регистрации
-        event_id = reg.get("event_id")
-        if event_id:
-            ev_res = supabase_admin.table("events").select("available_seats, total_seats").eq("id", event_id).execute()
-            if ev_res.data:
-                ev = ev_res.data[0] if isinstance(ev_res.data, list) else ev_res.data
-                new_avail = min(ev.get("available_seats", 0) + 1, ev.get("total_seats", 0))
-                supabase_admin.table("events").update({"available_seats": new_avail}).eq("id", event_id).execute()
+        # Лог отмены организатором (п. 6.9)
+        log_status_change(reg_id, old_status, "cancelled_by_admin", session["user"]["id"])
 
-        flash("Регистрация успешно отменена.", "success")
+        # Возврат места
+        ev = supabase_admin.table("events").select("available_seats, total_seats").eq("id", reg["event_id"]).single().execute()
+        if ev.data:
+            ev_data = ev.data[0] if isinstance(ev.data, list) else ev.data
+            supabase_admin.table("events").update({
+                "available_seats": min(ev_data["available_seats"] + 1, ev_data["total_seats"])
+            }).eq("id", reg["event_id"]).execute()
 
+        flash("Регистрация отменена.", "success")
     except Exception as e:
-        print(f"Cancel error: {e}")
-        flash(f"Ошибка при отмене: {str(e)}", "danger")
-
-    # Сохраняем фильтр при возврате
-    status_filter = request.args.get("status", "")
-    return redirect(url_for("admin.admin_dashboard", status=status_filter))
+        flash(f"Ошибка: {e}", "danger")
+        
+    return redirect(url_for("admin.admin_dashboard", status=request.args.get("status")))
 
 
 @admin_bp.route("/admin/attend/<int:reg_id>", methods=["POST"])
 @admin_required
 def mark_attended(reg_id):
-    """Отметка о посещении (финальный статус)."""
+    """Отметка посещения (п. 5, 6.5, 12.3)."""
     try:
         reg = supabase_admin.table("registrations").select("status").eq("id", reg_id).single().execute().data
         if not reg or reg["status"] != "confirmed":
@@ -217,6 +171,10 @@ def mark_attended(reg_id):
             return redirect(url_for("admin.admin_dashboard"))
 
         supabase_admin.table("registrations").update({"status": "attended"}).eq("id", reg_id).execute()
+        
+        # Лог посещения (п. 6.9)
+        log_status_change(reg_id, "confirmed", "attended", session["user"]["id"])
+        
         flash("Посещение отмечено.", "success")
     except Exception as e:
         flash(f"Ошибка: {e}", "danger")
@@ -242,7 +200,7 @@ def admin_users():
 def toggle_user_role(user_id):
     try:
         user = supabase_admin.table("users").select("role").eq("id", user_id).single().execute().data
-        if user_id == session['user']['id']:
+        if user_id == session["user"]["id"]:
             flash("Нельзя изменить свою роль.", "warning")
             return redirect(url_for("admin.admin_users"))
 
@@ -262,17 +220,17 @@ def edit_user(user_id):
         role = request.form.get("role", "user")
         is_active = request.form.get("is_active") == "on"
 
-        if user_id == session['user']['id'] and (role != session['user']['role'] or not is_active):
+        if user_id == session["user"]["id"] and (role != session["user"]["role"] or not is_active):
             flash("Нельзя заблокировать себя или сменить свою роль.", "warning")
             return redirect(url_for("admin.admin_users"))
 
         supabase_admin.table("users").update({
-            "full_name": full_name, "role": role, "is_active": is_active, "updated_at": datetime.utcnow().isoformat()
+            "full_name": full_name, "role": role, "is_active": is_active, 
+            "updated_at": datetime.utcnow().isoformat()
         }).eq("id", user_id).execute()
 
-        if user_id == session['user']['id']:
-            session['user'].update({"role": role, "full_name": full_name})
-
+        if user_id == session["user"]["id"]:
+            session["user"].update({"role": role, "full_name": full_name})
         flash("Данные обновлены.", "success")
     except Exception as e:
         flash(f"Ошибка: {e}", "danger")
