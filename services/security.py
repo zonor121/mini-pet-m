@@ -1,5 +1,4 @@
 from functools import wraps
-
 from flask import flash, redirect, session, url_for
 
 
@@ -18,11 +17,25 @@ def login_required(f):
 
 
 def admin_required(f):
+    """Доступ для Организатора и Супер-админа."""
     @wraps(f)
     def decorated(*args, **kwargs):
         user = get_current_user()
-        if not user or user.get("role") not in ("admin", "super_admin"):
-            flash("Доступ запрещен. Требуются права администратора.", "danger")
+        # Проверяем наличие прав организатора или админа
+        if not user or user.get("role") not in ("organizer", "admin", "super_admin"):
+            flash("Доступ запрещен. Требуются права организатора.", "danger")
+            return redirect(url_for("main.index"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def super_admin_required(f):
+    """Доступ только для Супер-админа (управление пользователями)."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_current_user()
+        if not user or user.get("role") != "super_admin":
+            flash("Доступ запрещен. Только для супер-администратора.", "danger")
             return redirect(url_for("main.index"))
         return f(*args, **kwargs)
     return decorated
