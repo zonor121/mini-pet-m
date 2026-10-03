@@ -1,6 +1,7 @@
 import csv
 import io
 from datetime import datetime
+import codecs
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, session, url_for
 
@@ -98,7 +99,7 @@ def admin_dashboard():
 @admin_bp.route("/admin/export")
 @admin_required
 def export_csv():
-    """Экспорт регистраций в CSV."""
+    """Экспорт регистраций в CSV с правильной кодировкой для Excel."""
     status_filter = request.args.get("status", "").strip()
     user_filter = request.args.get("user_id", "").strip()
 
@@ -114,8 +115,16 @@ def export_csv():
 
         regs = query.execute().data or []
 
+        # Создаем строковый буфер
         output = io.StringIO()
-        writer = csv.writer(output)
+        
+        # ЗАПИСЫВАЕМ BOM (маркер кодировки UTF-8) в самое начало
+        # Это заставляет Excel понимать, что файл в UTF-8
+        output.write(codecs.BOM_UTF8.decode('utf-8')) 
+        
+        writer = csv.writer(output, delimiter=';') # Используем точку с запятой, так Excel лучше понимает колонки в РФ
+        
+        # Заголовки
         writer.writerow(["ID", "Мероприятие", "Дата события", "Участник", "Email", "Статус", "Дата регистрации"])
 
         for reg in regs:
@@ -129,13 +138,19 @@ def export_csv():
                 reg.get("registered_at", "")[:10] if reg.get("registered_at") else ""
             ])
 
-        output.seek(0)
+        # Получаем содержимое
+        csv_content = output.getvalue()
+        
+        # Возвращаем файл
+        # Важно: mimetype должен быть text/csv, но кодировку мы уже внедрили через BOM
         return Response(
-            output.getvalue(),
-            mimetype="text/csv",
+            csv_content,
+            mimetype="text/csv; charset=utf-8-sig", # charset=utf-8-sig тоже помогает браузерам
             headers={"Content-Disposition": "attachment;filename=registrations.csv"}
         )
+        
     except Exception as e:
+        print(f"Export error: {e}")
         flash(f"Ошибка экспорта: {e}", "danger")
         return redirect(url_for("admin.admin_dashboard"))
 
