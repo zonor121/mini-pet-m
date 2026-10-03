@@ -70,7 +70,7 @@
                 </td>
                 <td class="reg-table__td reg-table__td--action">
                     {% if s in ('confirmed','created') %}
-                    <form action="{{ url_for('cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline">
+                    <form action="{{ url_for('main.cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline">
                         <button type="submit" class="btn-cancel" onclick="return confirm('Отменить регистрацию?')">Отменить</button>
                     </form>
                     {% else %}

@@ -22,16 +22,16 @@
         </div>
 
         <nav class="sidebar__nav">
-            <a href="{{ url_for('index') }}" class="sidebar__link">
+            <a href="{{ url_for('main.index') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
                 <span>Мероприятия</span>
             </a>
-            <a href="{{ url_for('admin_dashboard') }}" class="sidebar__link">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 17V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 17V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 17v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 <span>Аналитика</span>
             </a>
             <!-- Активная ссылка -->
-            <a href="{{ url_for('admin_users') }}" class="sidebar__link sidebar__link--active">
+            <a href="{{ url_for('admin.admin_users') }}" class="sidebar__link sidebar__link--active">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 <span>Пользователи</span>
             </a>
@@ -52,7 +52,7 @@
                 <p class="topbar__subtitle">Управление доступом, ролями и блокировка аккаунтов</p>
             </div>
             <div class="topbar__right">
-                <a href="{{ url_for('logout') }}" class="btn btn--ghost">Выйти</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost">Выйти</a>
             </div>
         </header>
 

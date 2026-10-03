@@ -5,7 +5,7 @@ seed_users.py — Генератор тестовых пользователей
 
 import os
 from dotenv import load_dotenv
-from supabase import create_client
+from services.supabase_client import supabase_admin as supabase
 
 load_dotenv()
 

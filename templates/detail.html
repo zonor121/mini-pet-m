@@ -2,7 +2,7 @@
 {% block title %}{{ event.title }} — EventHUB{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('index') }}" class="back-link">
+<a href="{{ url_for('main.index') }}" class="back-link">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M15 18l-6-6 6-6" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -56,7 +56,7 @@
 
             {% if get_current_user() %}
                 {% if event.available_seats > 0 %}
-                <form action="{{ url_for('register_event', event_id=event.id) }}" method="POST" class="reg-form__form">
+                <form action="{{ url_for('main.register_event', event_id=event.id) }}" method="POST" class="reg-form__form">
                     <input type="hidden" name="slug" value="{{ event.slug }}">
                     
                     <div class="form-group">
@@ -86,13 +86,13 @@
             {% else %}
             <div class="reg-form__login-prompt">
                 <p>Войдите, чтобы зарегистрироваться на мероприятие</p>
-                <form action="{{ url_for('login') }}" method="POST" class="login-inline login-inline--col">
+                <form action="{{ url_for('auth.login') }}" method="POST" class="login-inline login-inline--col">
                     <input type="email" name="email" placeholder="Ваш email" required class="form-input">
                     <input type="password" name="password" placeholder="Пароль" required class="form-input">
                     <button type="submit" class="btn btn--primary btn--full">Войти</button>
                 </form>
                 <div style="text-align: center; margin-top: 10px; font-size: 13px;">
-                    Нет аккаунта? <a href="{{ url_for('register') }}" style="color: #4F46E5; font-weight: 600;">Зарегистрироваться</a>
+                    Нет аккаунта? <a href="{{ url_for('auth.register') }}" style="color: #4F46E5; font-weight: 600;">Зарегистрироваться</a>
                 </div>
             </div>
             {% endif %}

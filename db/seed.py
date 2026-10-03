@@ -8,7 +8,7 @@ import random
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from supabase import create_client
+from services.supabase_client import supabase_admin as supabase
 
 load_dotenv()
 

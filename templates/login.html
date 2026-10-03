@@ -7,7 +7,7 @@
         <h2 class="auth-title">Вход в систему</h2>
         <p class="auth-subtitle">Рады видеть вас снова!</p>
         
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+        <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
             <div class="form-group">
                 <label class="form-label">Email</label>
                 <input type="email" name="email" class="form-input" placeholder="Ваш email" required>
@@ -22,7 +22,7 @@
         </form>
         
         <div class="auth-footer">
-            Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a>
+            Нет аккаунта? <a href="{{ url_for('auth.register') }}">Зарегистрироваться</a>
         </div>
     </div>
 </div>

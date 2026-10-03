@@ -22,11 +22,11 @@
         </div>
 
         <nav class="sidebar__nav">
-            <a href="{{ url_for('index') }}" class="sidebar__link">
+            <a href="{{ url_for('main.index') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
                 <span>Мероприятия</span>
             </a>
-            <a href="{{ url_for('cabinet') }}" class="sidebar__link">
+            <a href="{{ url_for('main.cabinet') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>
                 <span>Регистрации</span>
             </a>
@@ -34,7 +34,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9" stroke="currentColor" stroke-width="2"/></svg>
                 <span>Настройки</span>
             </a>
-            <a href="{{ url_for('admin_users') }}" class="sidebar__link">
+            <a href="{{ url_for('admin.admin_users') }}" class="sidebar__link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 <span>Пользователи</span>
             </a>
@@ -71,7 +71,7 @@
                         <span class="user-badge__role">Роль: Super Admin</span>
                     </div>
                 </div>
-                <a href="{{ url_for('logout') }}" class="btn btn--ghost" style="margin-left: 10px;">Выйти</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost" style="margin-left: 10px;">Выйти</a>
             </div>
         </header>
 
@@ -120,19 +120,19 @@
             <!-- Toolbar (Filters) -->
             <section class="toolbar">
                 <div class="tabs">
-                    <a href="{{ url_for('admin_dashboard') }}" 
+                    <a href="{{ url_for('admin.admin_dashboard') }}" 
                        class="tab {% if not current_status_filter %}tab--active{% endif %}">Все</a>
                     
-                    <a href="{{ url_for('admin_dashboard', status='created') }}" 
+                    <a href="{{ url_for('admin.admin_dashboard', status='created') }}" 
                        class="tab {% if current_status_filter == 'created' %}tab--active{% endif %}">Создана</a>
                     
-                    <a href="{{ url_for('admin_dashboard', status='confirmed') }}" 
+                    <a href="{{ url_for('admin.admin_dashboard', status='confirmed') }}" 
                        class="tab {% if current_status_filter == 'confirmed' %}tab--active{% endif %}">Подтверждена</a>
                     
-                    <a href="{{ url_for('admin_dashboard', status='attended') }}" 
+                    <a href="{{ url_for('admin.admin_dashboard', status='attended') }}" 
                        class="tab {% if current_status_filter == 'attended' %}tab--active{% endif %}">Посещено</a>
                     
-                    <a href="{{ url_for('admin_dashboard', status='cancelled') }}" 
+                    <a href="{{ url_for('admin.admin_dashboard', status='cancelled') }}" 
                        class="tab {% if current_status_filter == 'cancelled' %}tab--active{% endif %}">Отменена</a>
                 </div>
                 
@@ -184,7 +184,7 @@
                             </td>
                             <td class="reg-table__td reg-table__td--action">
                                 {% if status in ['confirmed', 'created'] %}
-                                    <form action="{{ url_for('admin_cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline;">
+                                    <form action="{{ url_for('admin.admin_cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline;">
                                         <input type="hidden" name="current_status" value="{{ current_status_filter }}">
                                         <button type="submit" class="btn-cancel" 
                                                 onclick="return confirm('Вы уверены, что хотите отменить эту регистрацию?')">
