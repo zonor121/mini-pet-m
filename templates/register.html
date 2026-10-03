@@ -27,6 +27,23 @@
                 <label class="form-label">Подтверждение пароля</label>
                 <input type="password" name="confirm_password" class="form-input" placeholder="Повторите пароль" required>
             </div>
+
+            <div class="form-group">
+                <label class="form-label">Номер телефона</label>
+                <input type="tel" name="phone" class="form-input" 
+                       placeholder="+7 (999) 000-00-00" 
+                       required 
+                       pattern="\+?[0-9\s\-\(\)]{10,18}"
+                       title="Введите корректный номер телефона (минимум 10 цифр)">
+                <small style="display: block; margin-top: 4px; color: #6B7280; font-size: 11px;">
+                    Используется для связи с организатором и восстановления доступа
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-input" placeholder="Минимум 6 символов" required minlength="6">
+            </div>
             
             <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
         </form>

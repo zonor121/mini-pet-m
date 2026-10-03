@@ -128,12 +128,14 @@ def export_csv():
         writer.writerow(["ID", "Мероприятие", "Дата события", "Участник", "Email", "Статус", "Дата регистрации"])
 
         for reg in regs:
+            phone = reg.get("reg_phone") or reg.get("user_phone") or ""
             writer.writerow([
                 reg.get("id"),
                 reg.get("event_title", "N/A"),
                 reg.get("event_date", "")[:10] if reg.get("event_date") else "",
                 reg.get("user_name", "Unknown"),
                 reg.get("user_email", ""),
+                phone,
                 reg.get("status"),
                 reg.get("registered_at", "")[:10] if reg.get("registered_at") else ""
             ])

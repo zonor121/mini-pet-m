@@ -73,6 +73,15 @@
                         <label class="form-label">Комментарий</label>
                         <input type="text" name="comment" class="form-input" placeholder="Напишите пожелание или вопрос...">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Телефон</label>
+                        <!-- Значение по умолчанию из профиля, но можно менять -->
+                        <input type="tel" name="phone" class="form-input" 
+                               placeholder="+7 (___) ___-__-__" 
+                               value="{{ get_current_user().phone if get_current_user().phone else '' }}"
+                               required 
+                               pattern="\+?[0-9\s\-\(\)]{10,18}">
+                    </div>
 
                     <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
                 </form>
