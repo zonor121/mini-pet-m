@@ -63,14 +63,19 @@
 <!-- Cards -->
 <section class="cards" id="events-grid">
     {% for event in events %}
-    <article class="card"
+    {% set is_past = (event.event_date or '') < now_iso %}
+    <article class="card{% if is_past %} card--past{% endif %}"
              data-search="{{ (event.title ~ ' ' ~ (event.description or '') ~ ' ' ~ (event.location or '')) | lower }}"
              data-date="{{ (event.event_date or '')[:10] }}"
              data-category="{{ event.categories.slug if event.categories else '' }}">
         <div class="card__header">
+            {% if is_past %}
+            <span class="badge badge--past">Прошедшее</span>
+            {% else %}
             <span class="badge badge--category">
                 {{ event.categories.name.upper() if event.categories else 'СОБЫТИЕ' }}
             </span>
+            {% endif %}
             <span class="badge badge--seats">Мест: {{ event.available_seats }} из {{ event.total_seats }}</span>
         </div>
         <h2 class="card__title">{{ event.title }}</h2>

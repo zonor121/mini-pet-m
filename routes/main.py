@@ -17,15 +17,22 @@ def index():
     categories = supabase.table("categories").select("*").order("name").execute().data or []
     slug_to_id = {c.get("slug"): c.get("id") for c in categories}
 
-    events = (
+    now_iso = datetime.utcnow().isoformat()
+
+    # Берём ВСЕ опубликованные события: актуальные и прошедшие
+    all_events = (
         supabase.table("events")
         .select("*, categories(*)")
         .eq("status", "published")
-        .gte("event_date", datetime.utcnow().isoformat())
         .order("event_date")
         .execute()
         .data or []
     )
+
+    # Актуальные — по возрастанию даты, прошедшие — после них, по убыванию
+    upcoming = [e for e in all_events if (e.get("event_date") or "") >= now_iso]
+    past = [e for e in all_events if (e.get("event_date") or "") < now_iso]
+    events = upcoming + list(reversed(past))
 
     # Поиск: название, описание, место
     if search:
@@ -63,6 +70,7 @@ def index():
         date_filter=date_filter,
         category_filter=category_filter,
         categories=categories,
+        now_iso=now_iso,
     )
 
 
@@ -79,7 +87,7 @@ def event_detail(slug):
     if not event:
         flash("Мероприятие не найдено.", "danger")
         return redirect(url_for("main.index"))
-    return render_template("detail.html", event=event)
+    return render_template("detail.html", event=event, now_iso=datetime.utcnow().isoformat())
 
 
 @main_bp.route("/event/<int:event_id>/register", methods=["POST"])
@@ -99,6 +107,10 @@ def register_event(event_id):
     if not event:
         flash("Мероприятие не найдено.", "danger")
         return redirect(url_for("main.index"))
+
+    if (event.get("event_date") or "") < datetime.utcnow().isoformat():
+        flash("Это мероприятие уже завершилось.", "warning")
+        return redirect(url_for("main.event_detail", slug=event["slug"]))
 
     if event["available_seats"] <= 0:
         flash("К сожалению, все места на это мероприятие заняты.", "danger")

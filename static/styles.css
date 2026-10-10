@@ -410,6 +410,82 @@ button, input, select { font-family: 'Inter', sans-serif; }
     font-size: 15px;
 }
 
+/* ── Прошедшие мероприятия (index) ────────────────────────── */
+.card--past {
+    background-color: #FAFAFA;
+    border-color: #E5E7EB;
+    opacity: 0.75;
+}
+
+.card--past:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #E5E7EB;
+}
+
+.card--past .card__title { color: #6B7280; }
+.card--past .card__meta-item { color: #9CA3AF; }
+.card--past .card__meta-item svg * { stroke: #9CA3AF; }
+.card--past .badge--seats { background-color: #F3F4F6; color: #9CA3AF; }
+
+.card--past .card__btn {
+    background-color: #F3F4F6;
+    border-color: #E5E7EB;
+    color: #9CA3AF;
+}
+
+.card--past .card__btn:hover {
+    background-color: #E5E7EB;
+    border-color: #D1D5DB;
+    color: #6B7280;
+    box-shadow: none;
+    transform: none;
+}
+
+.badge--past {
+    background-color: #F3F4F6;
+    color: #9CA3AF;
+    border: 1px dashed #D1D5DB;
+}
+
+/* ── Плашка «Мероприятие завершилось» (detail) ────────────── */
+.event-ended {
+    text-align: center;
+    padding: 28px 20px;
+    background-color: #F9FAFB;
+    border: 1.5px dashed #D1D5DB;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.event-ended__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: #F3F4F6;
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.event-ended__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.event-ended__text {
+    font-size: 13px;
+    color: #9CA3AF;
+    line-height: 1.55;
+    margin-bottom: 8px;
+}
+
 
 /* ============================================================
    BADGES

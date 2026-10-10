@@ -9,10 +9,15 @@
     <span>Назад к каталогу</span>
 </a>
 
+{% set is_past = (event.event_date or '') < now_iso %}
+
 <div class="layout">
     <!-- Left Column: Event Info -->
     <div class="event-info">
         <div class="event-info__badges">
+            {% if is_past %}
+            <span class="badge badge--past">Прошедшее</span>
+            {% endif %}
             <span class="badge badge--seats">
                 Свободно {{ event.available_seats }} из {{ event.total_seats }} мест
             </span>
@@ -54,21 +59,36 @@
             <h2 class="reg-form__title">Регистрация на событие</h2>
             <p class="reg-form__subtitle">Заполните форму для получения билета</p>
 
-            {% if get_current_user() %}
+            {% if is_past %}
+            <!-- Мероприятие завершилось -->
+            <div class="reg-form__login-prompt">
+                <div class="event-ended">
+                    <div class="event-ended__icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="12 7 12 12 15.5 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="event-ended__title">Мероприятие завершилось</p>
+                    <p class="event-ended__text">Регистрация на это событие закрыта.<br>Вы можете посмотреть описание и материалы выше.</p>
+                    <a href="{{ url_for('main.index') }}" class="btn btn--primary btn--full">К актуальным событиям</a>
+                </div>
+            </div>
+            {% elif get_current_user() %}
                 {% if event.available_seats > 0 %}
                 <form action="{{ url_for('main.register_event', event_id=event.id) }}" method="POST" class="reg-form__form">
                     <input type="hidden" name="slug" value="{{ event.slug }}">
-                    
+
                     <div class="form-group">
                         <label class="form-label">ФИО</label>
                         <input type="text" class="form-input" value="{{ get_current_user().full_name }}" readonly>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Email</label>
                         <input type="email" class="form-input" value="{{ get_current_user().email }}" readonly>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Комментарий</label>
                         <input type="text" name="comment" class="form-input" placeholder="Напишите пожелание или вопрос...">
@@ -76,10 +96,10 @@
                     <div class="form-group">
                         <label class="form-label">Телефон</label>
                         <!-- Значение по умолчанию из профиля, но можно менять -->
-                        <input type="tel" name="phone" class="form-input" 
-                               placeholder="+7 (___) ___-__-__" 
+                        <input type="tel" name="phone" class="form-input"
+                               placeholder="+7 (___) ___-__-__"
                                value="{{ get_current_user().phone if get_current_user().phone else '' }}"
-                               required 
+                               required
                                pattern="\+?[0-9\s\-\(\)]{10,18}">
                     </div>
 
