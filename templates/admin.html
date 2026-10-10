@@ -67,12 +67,12 @@
             <section class="stats">
                 <div class="stat-card">
                     <div class="stat-card__top">
-                        <span class="stat-card__label">Всего пользователей </span>
+                        <span class="stat-card__label">Всего регистраций</span>
                         <div class="stat-card__icon stat-card__icon--purple">
                             <svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>
                         </div>
                     </div>
-                    <div class="stat-card__value">{{ stats.total_users }}</div>
+                    <div class="stat-card__value">{{ stats.total_regs }}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card__top">
@@ -127,6 +127,36 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- Chart: registrations by status (п. 8.2) -->
+            {% if status_stats and status_stats.total > 0 %}
+            {% set st = status_stats %}
+            <section class="registrations">
+                <h2 class="registrations__title">Регистрации по статусам</h2>
+                <div class="css-chart">
+                    <div class="chart-row">
+                        <span class="chart-label">Подтверждена</span>
+                        <div class="chart-bar-bg"><div class="chart-bar-fill bg-green" style="width: {{ (st.confirmed / st.total * 100) | round(1) }}%"></div></div>
+                        <span class="chart-value">{{ st.confirmed }}</span>
+                    </div>
+                    <div class="chart-row">
+                        <span class="chart-label">Посещено</span>
+                        <div class="chart-bar-bg"><div class="chart-bar-fill bg-purple" style="width: {{ (st.attended / st.total * 100) | round(1) }}%"></div></div>
+                        <span class="chart-value">{{ st.attended }}</span>
+                    </div>
+                    <div class="chart-row">
+                        <span class="chart-label">Отменена</span>
+                        <div class="chart-bar-bg"><div class="chart-bar-fill bg-red" style="width: {{ (st.cancelled / st.total * 100) | round(1) }}%"></div></div>
+                        <span class="chart-value">{{ st.cancelled }}</span>
+                    </div>
+                    <div class="chart-row">
+                        <span class="chart-label">Создана</span>
+                        <div class="chart-bar-bg"><div class="chart-bar-fill" style="width: {{ (st.created / st.total * 100) | round(1) }}%; background-color: #9CA3AF;"></div></div>
+                        <span class="chart-value">{{ st.created }}</span>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
 
             <!-- Registrations Table -->
             <section class="registrations">

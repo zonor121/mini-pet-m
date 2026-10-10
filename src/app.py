@@ -33,6 +33,13 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
 
+    # Начальная учётная запись администратора из ADMIN_EMAIL/ADMIN_PASSWORD (п. 6.2)
+    from services.admin_init import ensure_admin
+    try:
+        ensure_admin()
+    except Exception:
+        app.logger.exception("ensure_admin failed")
+
     return app
 
 
