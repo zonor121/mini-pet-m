@@ -33,26 +33,10 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
-// ── Живой поиск (Debounce) ──────────────────────────────────
-const searchInput = document.querySelector('.filters__input');
-const filtersForm = document.getElementById('filters-form');
-
-if (searchInput && filtersForm) {
-    let timeout = null;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(timeout);
-        // Ждем 500мс после окончания ввода, чтобы не спамить запросами
-        timeout = setTimeout(() => {
-            filtersForm.submit();
-        }, 500);
-    });
-}
-
 // ── Auto-hide Toast Notifications ────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     const toasts = document.querySelectorAll('.toast');
-    
+
     toasts.forEach(toast => {
         // Удаляем через 4 секунды
         setTimeout(() => {

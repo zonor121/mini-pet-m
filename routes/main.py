@@ -10,20 +10,60 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route("/")
 def index():
     search = request.args.get("q", "").strip()
+    date_filter = request.args.get("date", "").strip()
+    category_filter = request.args.get("category", "").strip()
+
+    # Категории для фильтра
+    categories = supabase.table("categories").select("*").order("name").execute().data or []
+    slug_to_id = {c.get("slug"): c.get("id") for c in categories}
+
     events = (
         supabase.table("events")
-        .select("*")
+        .select("*, categories(*)")
         .eq("status", "published")
         .gte("event_date", datetime.utcnow().isoformat())
         .order("event_date")
         .execute()
         .data or []
     )
-    
+
+    # Поиск: название, описание, место
     if search:
-        events = [e for e in events if search.lower() in e.get("title", "").lower()]
-        
-    return render_template("index.html", events=events, search=search)
+        q = search.lower()
+        events = [
+            e for e in events
+            if q in e.get("title", "").lower()
+            or q in (e.get("description") or "").lower()
+            or q in (e.get("location") or "").lower()
+        ]
+
+    # Фильтр по категории (slug -> id)
+    if category_filter and category_filter in slug_to_id:
+        cat_id = slug_to_id[category_filter]
+        events = [e for e in events if e.get("category_id") == cat_id]
+
+    # Фильтр по дате
+    if date_filter:
+        now = datetime.utcnow()
+        today_str = now.date().isoformat()
+        if date_filter == "today":
+            events = [e for e in events if (e.get("event_date") or "")[:10] == today_str]
+        elif date_filter == "week":
+            week_later = (now + timedelta(days=7)).isoformat()
+            now_iso = now.isoformat()
+            events = [e for e in events if now_iso <= (e.get("event_date") or "") <= week_later]
+        elif date_filter == "month":
+            month_prefix = today_str[:7]
+            events = [e for e in events if (e.get("event_date") or "")[:7] == month_prefix]
+
+    return render_template(
+        "index.html",
+        events=events,
+        search=search,
+        date_filter=date_filter,
+        category_filter=category_filter,
+        categories=categories,
+    )
 
 
 @main_bp.route("/event/<slug>")
@@ -79,7 +119,7 @@ def register_event(event_id):
         return redirect(url_for("main.event_detail", slug=event["slug"]))
 
     now = datetime.utcnow().isoformat()
-    
+
     # Создание регистрации (п. 8.3 - сразу confirmed)
     reg_res = supabase_admin.table("registrations").insert({
         "user_id": user["id"],
@@ -90,7 +130,7 @@ def register_event(event_id):
         "registered_at": now,
         "confirmed_at": now,
     }).execute()
-    
+
     new_reg_id = reg_res.data[0]["id"] if reg_res.data else None
 
     # Логирование создания (п. 6.9)

@@ -6,12 +6,9 @@
     <title>{% block title %}EventHUB{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<base target="_blank">
 </head>
 <body class="{% block body_class %}{% endblock %}">
-
-    {% if get_current_user() and get_current_user().role in ('admin','super_admin') and request.endpoint != 'admin_dashboard' %}
-    <!-- Admin sidebar layout handled in admin.html -->
-    {% endif %}
 
     {% block header %}
     <header class="header">
@@ -29,24 +26,24 @@
 
             <nav class="nav">
                 <a href="{{ url_for('main.index') }}"
-                   class="nav__link {% if request.endpoint == 'index' %}nav__link--active{% endif %}">
+                   class="nav__link {% if request.endpoint == 'main.index' %}nav__link--active{% endif %}">
                     Мероприятия
                 </a>
                 {% if get_current_user() %}
                 <a href="{{ url_for('main.cabinet') }}"
-                   class="nav__link {% if request.endpoint == 'cabinet' %}nav__link--active{% endif %}">
+                   class="nav__link {% if request.endpoint == 'main.cabinet' %}nav__link--active{% endif %}">
                     Личный кабинет
                 </a>
                 {% if get_current_user().role in ('admin','super_admin') %}
                 <a href="{{ url_for('admin.admin_dashboard') }}"
-                   class="nav__link {% if request.endpoint == 'admin_dashboard' %}nav__link--active{% endif %}">
+                   class="nav__link {% if request.endpoint == 'admin.admin_dashboard' %}nav__link--active{% endif %}">
                     Админ-панель
                 </a>
                 {% endif %}
                 {% endif %}
             </nav>
 
-                        <div class="header__actions">
+            <div class="header__actions">
                 {% if get_current_user() %}
                     <span class="user-greeting">{{ get_current_user().full_name.split()[0] }}</span>
                     <a href="{{ url_for('main.cabinet') }}" class="btn btn--ghost">Кабинет</a>
@@ -56,6 +53,7 @@
                     <a href="{{ url_for('auth.register') }}" class="btn btn--primary">Регистрация</a>
                 {% endif %}
             </div>
+        </div>
     </header>
     {% endblock %}
 
