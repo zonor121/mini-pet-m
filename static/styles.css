@@ -875,9 +875,18 @@ button, input, select { font-family: 'Inter', sans-serif; }
     background-color: #F3F4F8;
 }
 
+/* Вырываем админку из ограниченного контейнера base.html (max-width/padding),
+   чтобы топбар и контент растягивались на всю ширину вьюпорта.
+   Сайдбар position:fixed, поэтому сдвиг main-area на 240px сохраняется. */
+.admin-body {
+    overflow-x: hidden;
+}
+
 .admin-layout {
     display: flex;
-    width: 100%;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
 }
 
 /* Sidebar */
@@ -961,7 +970,8 @@ button, input, select { font-family: 'Inter', sans-serif; }
 .admin-body .topbar {
     background-color: #FFFFFF;
     border-bottom: 1px solid #E5E7EB;
-    min-height: 70px;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04);
+    min-height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -973,22 +983,45 @@ button, input, select { font-family: 'Inter', sans-serif; }
     width: 100%;
 }
 
+/* Левая часть: заголовок + пилюля роли в один ряд */
 .topbar__left {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 3px;
+    align-items: center;
+    gap: 14px;
     min-width: 0;
 }
 
 .topbar__title {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: #111827;
+    letter-spacing: -0.3px;
     line-height: 1.2;
     margin: 0;
     padding: 0;
     white-space: nowrap;
+}
+
+/* Пилюля роли */
+.role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background-color: #EEF2FF;
+    color: #4F46E5;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.role-pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #6366F1;
 }
 
 .topbar__subtitle {
@@ -1000,31 +1033,47 @@ button, input, select { font-family: 'Inter', sans-serif; }
     white-space: nowrap;
 }
 
+/* Правая часть */
 .topbar__right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex-shrink: 0;
 }
 
-/* User badge */
+/* Карточка пользователя */
 .user-badge {
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 14px 6px 6px;
+    border: 1px solid #E5E7EB;
+    border-radius: 40px;
+    background-color: #FFFFFF;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.user-badge:hover {
+    border-color: #C7D2FE;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.10);
 }
 
 .user-badge__avatar {
     width: 36px; height: 36px;
-    background: #E0E7FF; color: #4F46E5;
+    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    color: #FFFFFF;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 14px;
     flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.30);
 }
 
 .user-badge__info {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 1px;
 }
 
 .user-badge__name {
@@ -1042,6 +1091,20 @@ button, input, select { font-family: 'Inter', sans-serif; }
     white-space: nowrap;
 }
 
+/* Кнопка выхода */
+.topbar__right .btn--ghost {
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 8px 18px;
+    transition: all 0.2s;
+}
+
+.topbar__right .btn--ghost:hover {
+    background-color: #FEF2F2;
+    border-color: #FECACA;
+    color: #DC2626;
+}
+
 /* Content */
 .admin-body .content {
     padding: 32px;
@@ -1051,6 +1114,7 @@ button, input, select { font-family: 'Inter', sans-serif; }
     flex: 1;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
 }
 
 /* Stats cards */

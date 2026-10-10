@@ -46,13 +46,14 @@
         <header class="topbar">
             <div class="topbar__left">
                 <h1 class="topbar__title">Панель управления</h1>
-                <p class="topbar__subtitle">Роль: {% if get_current_user().role == 'super_admin' %}Супер Админ{% else %}Организатор{% endif %}</p>
+                <span class="role-pill">{% if get_current_user().role == 'super_admin' %}Супер Админ{% else %}Организатор{% endif %}</span>
             </div>
             <div class="topbar__right">
                 <div class="user-badge">
                     <div class="user-badge__avatar">{{ get_current_user().full_name[0] if get_current_user() else 'A' }}</div>
                     <div class="user-badge__info">
                         <span class="user-badge__name">{{ get_current_user().full_name if get_current_user() else 'Администратор' }}</span>
+                        <span class="user-badge__role">{% if get_current_user().role == 'super_admin' %}Супер Админ{% else %}Организатор{% endif %}</span>
                     </div>
                 </div>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost">Выйти</a>
