@@ -5,37 +5,104 @@
 
 {% block content %}
 <div class="admin-layout">
+
     <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="sidebar__logo"><span>Event<strong>HUB</strong></span></div>
+        <div class="sidebar__logo">
+            <div class="sidebar__logo-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="white" stroke-width="2"/><path d="M3 10h18" stroke="white" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="sidebar__logo-text">Event<strong>HUB</strong></span>
+        </div>
+
         <nav class="sidebar__nav">
-            <a href="{{ url_for('main.index') }}" class="sidebar__link">Мероприятия</a>
-            <a href="{{ url_for('admin.admin_dashboard') }}" class="sidebar__link sidebar__link--active">Регистрации</a>
+            <a href="{{ url_for('main.index') }}" class="sidebar__link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+                <span>Мероприятия</span>
+            </a>
+
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="sidebar__link sidebar__link--active">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 17V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 17V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 17v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span>Регистрации</span>
+            </a>
+
             {% if get_current_user() and get_current_user().role == 'super_admin' %}
-            <a href="{{ url_for('admin.admin_users') }}" class="sidebar__link">Пользователи</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="sidebar__link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>
+                <span>Пользователи</span>
+            </a>
             {% endif %}
         </nav>
-        <div class="sidebar__role">{{ get_current_user().full_name.split()[0] if get_current_user() else 'Админ' }}</div>
+
+        <div class="sidebar__role">
+            <span>{{ get_current_user().full_name.split()[0] if get_current_user() else 'Админ' }}</span>
+        </div>
     </aside>
 
     <!-- MAIN AREA -->
     <div class="main-area">
+
+        <!-- Topbar -->
         <header class="topbar">
-            <h1>Панель управления</h1>
-            <p>Роль: {{ 'Супер Админ' if get_current_user().role == 'super_admin' else 'Организатор' }}</p>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost">Выйти</a>
+            <div class="topbar__left">
+                <h1 class="topbar__title">Панель управления</h1>
+                <p class="topbar__subtitle">Роль: {% if get_current_user().role == 'super_admin' %}Супер Админ{% else %}Организатор{% endif %}</p>
+            </div>
+            <div class="topbar__right">
+                <div class="user-badge">
+                    <div class="user-badge__avatar">{{ get_current_user().full_name[0] if get_current_user() else 'A' }}</div>
+                    <div class="user-badge__info">
+                        <span class="user-badge__name">{{ get_current_user().full_name if get_current_user() else 'Администратор' }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost">Выйти</a>
+            </div>
         </header>
 
+        <!-- Content -->
         <main class="content">
-            <!-- Stats -->
+
+            <!-- Stats Cards -->
             <section class="stats">
-                <div class="stat-card"><div class="val">{{ stats.total_regs }}</div><div class="lbl">Всего регистраций</div></div>
-                <div class="stat-card"><div class="val">{{ stats.active_events }}</div><div class="lbl">Активные события</div></div>
-                <div class="stat-card"><div class="val">{{ "{:,.0f}".format(stats.revenue) }} ₽</div><div class="lbl">Выручка</div></div>
-                <div class="stat-card"><div class="val">{{ stats.cancel_rate }}%</div><div class="lbl">Отказы</div></div>
+                <div class="stat-card">
+                    <div class="stat-card__top">
+                        <span class="stat-card__label">Всего регистраций</span>
+                        <div class="stat-card__icon stat-card__icon--purple">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-card__value">{{ stats.total_regs }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top">
+                        <span class="stat-card__label">Активные события</span>
+                        <div class="stat-card__icon stat-card__icon--blue">
+                            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-card__value">{{ stats.active_events }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top">
+                        <span class="stat-card__label">Общие сборы</span>
+                        <div class="stat-card__icon stat-card__icon--green">
+                            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 .9-3 2.2c0 3.1 6 1.6 6 4.8 0 1.3-1.3 2.3-3 2.3s-3-1.1-3-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-card__value">{{ "{:,.0f}".format(stats.revenue) }} ₽</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top">
+                        <span class="stat-card__label">Процент отказов</span>
+                        <div class="stat-card__icon stat-card__icon--red">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2 20h20L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-card__value">{{ stats.cancel_rate }}%</div>
+                </div>
             </section>
 
-            <!-- Toolbar & Filters -->
+            <!-- Toolbar -->
             <section class="toolbar">
                 <div class="tabs">
                     <a href="{{ url_for('admin.admin_dashboard') }}" class="tab {% if not current_status_filter %}tab--active{% endif %}">Все</a>
@@ -43,12 +110,16 @@
                     <a href="{{ url_for('admin.admin_dashboard', status='attended') }}" class="tab {% if current_status_filter == 'attended' %}tab--active{% endif %}">Посещено</a>
                     <a href="{{ url_for('admin.admin_dashboard', status='cancelled') }}" class="tab {% if current_status_filter == 'cancelled' %}tab--active{% endif %}">Отменена</a>
                 </div>
-                <a href="{{ url_for('admin.export_csv', status=current_status_filter, user_id=request.args.get('user_id')) }}" class="btn-export">Экспорт CSV</a>
+                <a href="{{ url_for('admin.export_csv', status=current_status_filter, user_id=request.args.get('user_id')) }}" class="btn-export">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    Экспорт CSV
+                </a>
             </section>
 
-            <div style="margin-bottom: 20px; background: white; padding: 12px; border-radius: 8px; border: 1px solid #E5E7EB;">
-                <label style="font-size: 13px; font-weight: 500; color: #6B7280; margin-right: 10px;">Фильтр по участнику:</label>
-                <select onchange="window.location.search = 'user_id=' + this.value + '&status={{ current_status_filter }}'" style="padding: 6px; border: 1px solid #D1D5DB; border-radius: 6px;">
+            <!-- User Filter -->
+            <div class="user-filter">
+                <label class="user-filter__label" for="user-filter-select">Фильтр по участнику:</label>
+                <select id="user-filter-select" class="user-filter__select" onchange="window.location.search = 'user_id=' + this.value + '&status={{ current_status_filter }}'">
                     <option value="">Все участники</option>
                     {% for u in all_users %}
                         <option value="{{ u.id }}" {% if request.args.get('user_id') == u.id|string %}selected{% endif %}>{{ u.full_name }}</option>
@@ -56,74 +127,87 @@
                 </select>
             </div>
 
-            <!-- Table -->
+            <!-- Registrations Table -->
             <section class="registrations">
                 <div class="table-wrap">
                     <table class="reg-table">
                         <thead>
                             <tr>
-                                <th>МЕРОПРИЯТИЕ</th>
-                                <th>УЧАСТНИК</th>
-                                <th>ДАТА</th>
-                                <th>СТАТУС</th>
-                                <th>ДЕЙСТВИЕ</th>
+                                <th class="reg-table__th">Мероприятие</th>
+                                <th class="reg-table__th">Участник</th>
+                                <th class="reg-table__th">Дата</th>
+                                <th class="reg-table__th">Статус</th>
+                                <th class="reg-table__th">Действие</th>
                             </tr>
                         </thead>
                         <tbody>
                         {% for reg in registrations %}
-                        <tr>
-                            <td><strong>{{ reg.event_title }}</strong></td>
-                            <td>
-                                <div>{{ reg.user_name }}</div>
-                                <div style="font-size: 11px; color: #6B7280;">{{ reg.user_email }}</div>
+                        <tr class="reg-table__row">
+                            <td class="reg-table__td">
+                                <strong>{{ reg.event_title }}</strong>
                             </td>
-                            <td>{{ fmt_short_date(reg.event_date) }}</td>
-                            <td>
+
+                            <td class="reg-table__td">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-weight: 600; color: #111827;">{{ reg.user_name }}</span>
+                                    <span style="font-size: 12px; color: #6B7280;">{{ reg.user_email }}</span>
+                                </div>
+                            </td>
+
+                            <td class="reg-table__td">
+                                {{ fmt_short_date(reg.event_date) }}
+                            </td>
+
+                            <td class="reg-table__td">
                                 {% set history = logs_map.get(reg.id, []) %}
-                                
-                                
                                 {% set history_parts = [] %}
                                 {% for log in history %}
                                     {% set _ = history_parts.append(log.new_status + ' (' + fmt_short_date(log.created_at) + ')') %}
                                 {% endfor %}
-                                
-                               
                                 {% set hist_text = history_parts | join(' | ') %}
-                            
-                                <span class="status 
+
+                                <span class="status
                                     {% if reg.status == 'confirmed' %}status--confirmed
-                                    {% elif reg.status == 'attended' %}status--attended
-                                    {% else %}status--cancelled{% endif %}"
-                                    title="История: {{ hist_text }}" 
-                                    style="cursor: help;">
-                                    
+                                    {% elif reg.status == 'attended' %}status--confirmed
+                                    {% elif reg.status == 'created' %}status--created
+                                    {% else %}status--cancelled-visit{% endif %}"
+                                    title="История: {{ hist_text }}"
+                                    style="cursor: help;"
+                                >
                                     {% if reg.status == 'confirmed' %}Подтверждена
                                     {% elif reg.status == 'attended' %}Посещено
+                                    {% elif reg.status == 'created' %}Создана
                                     {% else %}Отменена{% endif %}
                                 </span>
                             </td>
-                            <td>
+
+                            <td class="reg-table__td">
                                 {% if reg.status == 'confirmed' %}
-                                    <form action="{{ url_for('admin.mark_attended', reg_id=reg.id) }}" method="POST" style="display:inline;">
-                                        <button class="btn-sm btn-success">Пришел</button>
-                                    </form>
-                                    <form action="{{ url_for('admin.admin_cancel_registration', reg_id=reg.id) }}" method="POST" style="display:inline;">
-                                        <button class="btn-sm btn-danger" onclick="return confirm('Отменить?')">Отменить</button>
-                                    </form>
+                                    <div style="display: flex; gap: 6px;">
+                                        <form action="{{ url_for('admin.mark_attended', reg_id=reg.id) }}" method="POST">
+                                            <button type="submit" class="btn-cancel" style="background: #ECFDF5; color: #059669; border-color: #A7F3D0; font-size: 12px; padding: 4px 8px;">Пришел</button>
+                                        </form>
+                                        <form action="{{ url_for('admin.admin_cancel_registration', reg_id=reg.id) }}" method="POST">
+                                            <button type="submit" class="btn-cancel" style="font-size: 12px; padding: 4px 8px;" onclick="return confirm('Отменить?')">Отменить</button>
+                                        </form>
+                                    </div>
                                 {% elif reg.status == 'attended' %}
-                                    <span style="color: #059669; font-size: 12px;">✓ Архив</span>
+                                    <span style="color: #059669; font-size: 12px; font-weight: 600;">✓ Архив</span>
                                 {% else %}
                                     <span style="color: #9CA3AF;">—</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" class="empty-row">Нет данных</td></tr>
+                        <tr>
+                            <td colspan="5" class="empty-row">Нет данных о регистрациях</td>
+                        </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </section>
+
         </main>
     </div>
 </div>
