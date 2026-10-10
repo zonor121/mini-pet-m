@@ -240,7 +240,7 @@ def cancel_registration(reg_id):
     log_status_change(reg_id, reg["status"], "cancelled_by_user", user["id"])
 
     # Возврат места
-    ev = supabase_admin.table("events").select("available_seats, total_seats").eq("id", reg["event_id"]).single().execute().data
+    ev = supabase_admin.table("events").select("id, available_seats, total_seats").eq("id", reg["event_id"]).single().execute().data
     if ev:
         supabase_admin.table("events").update({
             "available_seats": min(ev["available_seats"] + 1, ev["total_seats"])
