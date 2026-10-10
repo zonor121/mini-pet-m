@@ -16,14 +16,14 @@ def admin_dashboard():
     status_filter = request.args.get("status", "").strip()
     user_filter = request.args.get("user_id", "").strip()
 
-    stats = {"total_regs": 0, "active_events": 0, "revenue": 0.0, "cancel_rate": 0.0}
+    stats = {"total_users": 0, "active_events": 0, "revenue": 0.0, "cancel_rate": 0.0}
     status_stats = {"confirmed": 0, "created": 0, "attended": 0, "cancelled": 0, "total": 0}
     regs = []
     all_users = []
     logs_map = {}
 
     try:
-        # Подсчет статистики
+        # Вспомогательная функция для подсчета
         def count(table, filters=None):
             q = supabase_admin.table(table).select("id", count="exact")
             if filters:
@@ -32,22 +32,33 @@ def admin_dashboard():
             res = q.execute()
             return int(res.count) if hasattr(res, "count") else len(res.data or [])
 
-        total_regs = count("registrations")
+        # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        # Считаем именно пользователей из таблицы users
+        total_users = count("users") 
+        
+        # Остальные метрики
+        active_events = count("events", {"status": "published"})
+        
         confirmed = count("registrations", {"status": "confirmed"})
         created = count("registrations", {"status": "created"})
         attended = count("registrations", {"status": "attended"})
         cancelled = count("registrations", {"status": ["cancelled_by_user", "cancelled_by_admin", "rejected"]})
+        
+        total_regs = confirmed + created + attended + cancelled
+        cancel_rate = round((cancelled / total_regs * 100), 1) if total_regs > 0 else 0.0
 
         stats = {
-            "total_regs": total_regs,
-            "active_events": count("events", {"status": "published"}),
-            "revenue": 0.0,  # Упрощено для стабильности
-            "cancel_rate": round((cancelled / total_regs * 100), 1) if total_regs > 0 else 0.0
+            "total_users": total_users,      # Теперь здесь реальное число юзеров
+            "active_events": active_events,
+            "revenue": 0.0,                  # Упрощено для стабильности
+            "cancel_rate": cancel_rate
         }
+        # -------------------------
+
         status_stats = {
             "confirmed": confirmed, "created": created, 
             "attended": attended, "cancelled": cancelled,
-            "total": confirmed + created + attended + cancelled
+            "total": total_regs
         }
 
         # Список пользователей для фильтра
@@ -64,7 +75,7 @@ def admin_dashboard():
             
         regs = query.execute().data or []
 
-        # Загрузка логов для tooltip (п. 6.9)
+        # Загрузка логов для tooltip
         if regs:
             reg_ids = [r["id"] for r in regs]
             logs_res = supabase_admin.table("registration_logs").select("*").in_("registration_id", reg_ids).order("created_at", desc=True).execute()
