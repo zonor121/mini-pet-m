@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from services.security import get_current_user, login_required
-from services.supabase_client import supabase, supabase_admin
+from services.supabase_client import supabase_admin
 from services.log_service import log_status_change
 
 main_bp = Blueprint("main", __name__)
@@ -13,15 +13,15 @@ def index():
     date_filter = request.args.get("date", "").strip()
     category_filter = request.args.get("category", "").strip()
 
-    # Категории для фильтра
-    categories = supabase.table("categories").select("*").order("name").execute().data or []
+    # Категории для фильтра (серверный доступ через service_role)
+    categories = supabase_admin.table("categories").select("*").order("name").execute().data or []
     slug_to_id = {c.get("slug"): c.get("id") for c in categories}
 
     now_iso = datetime.utcnow().isoformat()
 
     # Берём ВСЕ опубликованные события: актуальные и прошедшие
     all_events = (
-        supabase.table("events")
+        supabase_admin.table("events")
         .select("*, categories(*)")
         .eq("status", "published")
         .order("event_date")
@@ -57,8 +57,8 @@ def index():
             events = [e for e in events if (e.get("event_date") or "")[:10] == today_str]
         elif date_filter == "week":
             week_later = (now + timedelta(days=7)).isoformat()
-            now_iso = now.isoformat()
-            events = [e for e in events if now_iso <= (e.get("event_date") or "") <= week_later]
+            now_iso2 = now.isoformat()
+            events = [e for e in events if now_iso2 <= (e.get("event_date") or "") <= week_later]
         elif date_filter == "month":
             month_prefix = today_str[:7]
             events = [e for e in events if (e.get("event_date") or "")[:7] == month_prefix]
@@ -77,7 +77,7 @@ def index():
 @main_bp.route("/event/<slug>")
 def event_detail(slug):
     event = (
-        supabase.table("events")
+        supabase_admin.table("events")
         .select("*")
         .eq("slug", slug)
         .single()
@@ -103,11 +103,12 @@ def register_event(event_id):
         return redirect(url_for("main.event_detail", slug=request.form.get("slug", "")))
 
     # Проверка события и мест (п. 6.6)
-    event = supabase.table("events").select("*").eq("id", event_id).single().execute().data
+    event = supabase_admin.table("events").select("*").eq("id", event_id).single().execute().data
     if not event:
         flash("Мероприятие не найдено.", "danger")
         return redirect(url_for("main.index"))
 
+    # Бизнес-правило: запрет регистрации на прошедшее событие (п. 7.3)
     if (event.get("event_date") or "") < datetime.utcnow().isoformat():
         flash("Это мероприятие уже завершилось.", "warning")
         return redirect(url_for("main.event_detail", slug=event["slug"]))
@@ -116,9 +117,9 @@ def register_event(event_id):
         flash("К сожалению, все места на это мероприятие заняты.", "danger")
         return redirect(url_for("main.event_detail", slug=event["slug"]))
 
-    # Проверка дубликата (п. 6.7)
+    # Бизнес-правило: запрет дубля регистрации (п. 6.7)
     dup = (
-        supabase.table("registrations")
+        supabase_admin.table("registrations")
         .select("id")
         .eq("event_id", event_id)
         .eq("user_id", user["id"])
@@ -132,7 +133,7 @@ def register_event(event_id):
 
     now = datetime.utcnow().isoformat()
 
-    # Создание регистрации (п. 8.3 - сразу confirmed)
+    # Создание регистрации (сразу confirmed)
     reg_res = supabase_admin.table("registrations").insert({
         "user_id": user["id"],
         "event_id": event_id,
@@ -163,7 +164,7 @@ def register_event(event_id):
 def cabinet():
     user = get_current_user()
     regs = (
-        supabase.table("registrations")
+        supabase_admin.table("registrations")
         .select("*, events(title, slug, event_date)")
         .eq("user_id", user["id"])
         .order("registered_at", desc=True)
@@ -177,13 +178,13 @@ def cabinet():
 @login_required
 def cancel_registration(reg_id):
     user = get_current_user()
-    reg = supabase.table("registrations").select("*").eq("id", reg_id).single().execute().data
+    reg = supabase_admin.table("registrations").select("*").eq("id", reg_id).single().execute().data
 
     if not reg or reg["user_id"] != user["id"]:
         flash("Регистрация не найдена.", "danger")
         return redirect(url_for("main.cabinet"))
 
-    # П. 5: Отмена возможна только из Created или Confirmed
+    # Бизнес-правило: отмена возможна только из Created или Confirmed (п. 5)
     if reg["status"] not in ("created", "confirmed"):
         flash("Эту регистрацию нельзя отменить.", "warning")
         return redirect(url_for("main.cabinet"))
@@ -197,7 +198,7 @@ def cancel_registration(reg_id):
     log_status_change(reg_id, reg["status"], "cancelled_by_user", user["id"])
 
     # Возврат места
-    ev = supabase.table("events").select("available_seats, total_seats").eq("id", reg["event_id"]).single().execute().data
+    ev = supabase_admin.table("events").select("available_seats, total_seats").eq("id", reg["event_id"]).single().execute().data
     if ev:
         supabase_admin.table("events").update({
             "available_seats": min(ev["available_seats"] + 1, ev["total_seats"])
@@ -205,6 +206,7 @@ def cancel_registration(reg_id):
 
     flash("Регистрация успешно отменена.", "success")
     return redirect(url_for("main.cabinet"))
+
 
 @main_bp.route("/healthz")
 def health_check():
