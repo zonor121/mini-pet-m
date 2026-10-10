@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from services.security import get_current_user, login_required
 from services.supabase_client import supabase_admin
 from services.log_service import log_status_change
@@ -171,7 +171,49 @@ def cabinet():
         .execute()
         .data or []
     )
-    return render_template("cabinet.html", registrations=regs)
+    # Актуальный профиль из БД (на случай изменений из админки)
+    profile = (
+        supabase_admin.table("users")
+        .select("full_name, email, phone, role")
+        .eq("id", user["id"])
+        .single()
+        .execute()
+        .data
+    )
+    return render_template("cabinet.html", registrations=regs, profile=profile, active_tab=request.args.get("tab", "registrations"))
+
+
+@main_bp.route("/cabinet/profile", methods=["POST"])
+@login_required
+def update_profile():
+    user = get_current_user()
+    full_name = request.form.get("full_name", "").strip()
+    phone = request.form.get("phone", "").strip()
+
+    if not full_name:
+        flash("ФИО не может быть пустым.", "danger")
+        return redirect(url_for("main.cabinet", tab="profile"))
+    if phone and len(phone) < 10:
+        flash("Укажите корректный номер телефона.", "danger")
+        return redirect(url_for("main.cabinet", tab="profile"))
+
+    try:
+        supabase_admin.table("users").update({
+            "full_name": full_name,
+            "phone": phone,
+            "updated_at": datetime.utcnow().isoformat(),
+        }).eq("id", user["id"]).execute()
+
+        # Синхронизируем сессию
+        session["user"]["full_name"] = full_name
+        session["user"]["phone"] = phone
+        session.modified = True
+
+        flash("Профиль обновлён.", "success")
+    except Exception:
+        flash("Не удалось сохранить профиль. Попробуйте позже.", "danger")
+
+    return redirect(url_for("main.cabinet", tab="profile"))
 
 
 @main_bp.route("/cancel/<int:reg_id>", methods=["POST"])

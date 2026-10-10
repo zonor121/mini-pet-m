@@ -410,6 +410,45 @@ button, input, select { font-family: 'Inter', sans-serif; }
     font-size: 15px;
 }
 
+/* ── Кабинет: вкладки и профиль ───────────────────────────── */
+.cabinet-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.cabinet-tabs .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.profile-card {
+    max-width: 560px;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #9CA3AF;
+}
+
+.profile-form__actions {
+    margin-top: 6px;
+    display: flex;
+    justify-content: flex-start;
+}
+
 /* ── Прошедшие мероприятия (index) ────────────────────────── */
 .card--past {
     background-color: #FAFAFA;

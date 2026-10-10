@@ -4,9 +4,60 @@
 {% block content %}
 <section class="hero">
     <h1 class="hero__title">Личный кабинет</h1>
-    <p class="hero__subtitle">Ваши регистрации и ближайшие события</p>
+    <p class="hero__subtitle">Ваш профиль и регистрации на мероприятия</p>
 </section>
 
+<!-- Меню кабинета -->
+<nav class="cabinet-tabs">
+    <a href="{{ url_for('main.cabinet') }}"
+       class="tab {% if active_tab != 'profile' %}tab--active{% endif %}"
+       data-tab="registrations">Мои регистрации</a>
+    <a href="{{ url_for('main.cabinet', tab='profile') }}"
+       class="tab {% if active_tab == 'profile' %}tab--active{% endif %}"
+       data-tab="profile">Профиль</a>
+</nav>
+
+{% if active_tab == 'profile' %}
+<!-- ═══ Вкладка: Профиль ═══ -->
+<section class="registrations profile-card">
+    <h2 class="registrations__title">Профиль</h2>
+
+    <form action="{{ url_for('main.update_profile') }}" method="POST" class="profile-form">
+        <div class="form-group">
+            <label class="form-label" for="pf-email">Email</label>
+            <input type="email" id="pf-email" class="form-input" value="{{ profile.email if profile else get_current_user().email }}" readonly>
+            <span class="form-hint">Email изменяется через администратора</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="pf-name">ФИО</label>
+            <input type="text" id="pf-name" name="full_name" class="form-input"
+                   value="{{ profile.full_name if profile else get_current_user().full_name }}"
+                   placeholder="Иванов Иван Иванович" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="pf-phone">Телефон</label>
+            <input type="tel" id="pf-phone" name="phone" class="form-input"
+                   value="{{ profile.phone if profile and profile.phone else '' }}"
+                   placeholder="+7 (999) 123-45-67">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Роль</label>
+            <input type="text" class="form-input"
+                   value="{% if profile and profile.role == 'super_admin' %}Супер Админ{% elif profile and profile.role == 'admin' %}Организатор{% else %}Пользователь{% endif %}"
+                   readonly>
+        </div>
+
+        <div class="profile-form__actions">
+            <button type="submit" class="btn btn--primary">Сохранить изменения</button>
+        </div>
+    </form>
+</section>
+
+{% else %}
+<!-- ═══ Вкладка: Мои регистрации ═══ -->
 {% if next_event %}
 <section class="countdown-banner" data-event-date="{{ next_event.event_date }}">
     <div class="countdown-banner__info">
@@ -87,4 +138,5 @@
         </table>
     </div>
 </section>
+{% endif %}
 {% endblock %}
