@@ -60,10 +60,12 @@
                         <span class="status status--confirmed">Подтверждена</span>
                     {% elif s == 'created' %}
                         <span class="status status--created">Создана</span>
+                    {% elif s == 'attended' %}
+                        <span class="status status--confirmed">Посещение отмечено</span>
                     {% elif s in ('cancelled_by_user','cancelled_by_admin') %}
-                        <span class="status status--cancelled-visit">Посещение отменено</span>
+                        <span class="status status--cancelled-visit">Отменена</span>
                     {% elif s == 'rejected' %}
-                        <span class="status status--cancelled">Отменена</span>
+                        <span class="status status--cancelled">Отклонена</span>
                     {% else %}
                         <span class="status status--created">{{ s }}</span>
                     {% endif %}
