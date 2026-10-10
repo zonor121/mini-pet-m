@@ -153,3 +153,7 @@ def cancel_registration(reg_id):
 
     flash("Регистрация успешно отменена.", "success")
     return redirect(url_for("main.cabinet"))
+
+@main_bp.route("/healthz")
+def health_check():
+    return "OK", 200
